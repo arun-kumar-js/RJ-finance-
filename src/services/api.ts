@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Professional Axios Instance
 const API = axios.create({
-  baseURL: 'http://192.168.0.5:5002/api',
+  baseURL: 'https://rj-backend-9xr1.onrender.com/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
