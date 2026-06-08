@@ -1,0 +1,173 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { getLoan, getEmiSchedule, deleteLoan } from '../services/loanService';
+import { collectEmi } from '../services/financeService';
+import { useAppSelector } from '../redux/hooks';
+
+const LoanDetails = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAppSelector(state => state.auth);
+
+  const [loan, setLoan] = useState<any>(null);
+  const [schedule, setSchedule] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [collecting, setCollecting] = useState(false);
+  const [challanNumber, setChallanNumber] = useState('');
+
+  useEffect(() => {
+    fetchLoan();
+  }, [id]);
+
+  const fetchLoan = async () => {
+    try {
+      setLoading(true);
+      const loanData = await getLoan(id!);
+      setLoan(loanData);
+
+      const emiData = await getEmiSchedule(id!);
+      setSchedule(emiData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCollect = async (emi: any) => {
+    if (!challanNumber.trim()) {
+      alert("Challan Number is required!");
+      return;
+    }
+
+    if (!window.confirm(`Collect EMI ₹${emi.amount} for Installment ${emi.installmentNumber}?`)) return;
+
+    try {
+      setCollecting(true);
+      await collectEmi({
+        customerId: loan.customerId._id || loan.customerId,
+        loanId: loan._id,
+        emiScheduleId: emi._id,
+        receiptBookNumber: 'CHALLAN',
+        receiptNumber: challanNumber.trim(),
+        amount: emi.amount,
+        collectionDate: new Date().toISOString()
+      });
+      setChallanNumber('');
+      fetchLoan();
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.message || 'Failed to collect EMI');
+    } finally {
+      setCollecting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this loan?')) return;
+    try {
+      await deleteLoan(id!);
+      navigate(-1);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete loan');
+    }
+  };
+
+  if (loading || !loan) {
+    return <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading Loan Details...</div>;
+  }
+
+  const nextPendingEmi = schedule.find(s => s.status.toLowerCase() === 'pending');
+  const totalPaid = loan.totalPaid || 0;
+  const remaining = (loan.emiAmount * loan.totalInstallments) - totalPaid;
+
+  const getBadgeColor = (status: string) => {
+    if (status.toLowerCase() === 'paid') return '#10B981';
+    if (status.toLowerCase() === 'pending') return '#F59E0B';
+    return '#64748B';
+  };
+
+  return (
+    <div className="animate-fade-in" style={{ backgroundColor: '#F1F5F9', minHeight: '100vh', paddingBottom: '40px' }}>
+      {/* Top Blue Header Section */}
+      <div style={{ backgroundColor: '#1E3A5F', padding: '24px', borderBottomLeftRadius: '24px', borderBottomRightRadius: '24px', color: 'white', position: 'relative' }}>
+        
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px', position: 'relative' }}>
+          <button onClick={() => navigate(-1)} style={{ position: 'absolute', left: 0, background: 'none', border: 'none', color: 'white', fontSize: '28px', cursor: 'pointer' }}>‹</button>
+          <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Loan Details #{loan.loanNumber}</h1>
+          {user?.role === 'admin' && (
+            <button onClick={handleDelete} style={{ position: 'absolute', right: 0, width: '36px', height: '36px', borderRadius: '18px', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', fontSize: '18px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              🗑️
+            </button>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <span style={{ color: '#CBD5E1', fontSize: '14px', fontWeight: '600' }}>Loan Amount (₹)</span>
+          <span style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>₹{loan.loanAmount?.toLocaleString()}</span>
+        </div>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <span style={{ color: '#CBD5E1', fontSize: '14px', fontWeight: '600' }}>Total Paid</span>
+          <span style={{ color: '#10B981', fontSize: '16px', fontWeight: 'bold' }}>₹{totalPaid?.toLocaleString()}</span>
+        </div>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span style={{ color: '#CBD5E1', fontSize: '14px', fontWeight: '600' }}>Remaining</span>
+          <span style={{ color: '#EF4444', fontSize: '16px', fontWeight: 'bold' }}>₹{remaining?.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1E293B', marginBottom: '16px' }}>EMI Schedule</h2>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {schedule.map((emi) => (
+            <div key={emi._id} style={{ backgroundColor: 'white', borderRadius: '16px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border)' }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ color: '#1E293B', fontSize: '15px', fontWeight: 'bold' }}>Installment {emi.installmentNumber}</span>
+                <span style={{ backgroundColor: getBadgeColor(emi.status), color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                  {emi.status}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span style={{ color: '#64748B', fontSize: '13px' }}>Due Date: {new Date(emi.dueDate).toLocaleDateString('en-GB')}</span>
+                <span style={{ color: '#1E293B', fontSize: '16px', fontWeight: 'bold' }}>₹{emi.amount}</span>
+              </div>
+
+              {emi.paidDate && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10B981', fontSize: '13px', fontWeight: 'bold', marginTop: '8px' }}>
+                  <span>Paid Date: {new Date(emi.paidDate).toLocaleDateString('en-GB')}</span>
+                  {emi.challanNumber && <span>Challan No: {emi.challanNumber}</span>}
+                </div>
+              )}
+
+              {emi._id === nextPendingEmi?._id && (
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                  <input
+                    type="text"
+                    placeholder="Challan No"
+                    value={challanNumber}
+                    onChange={(e) => setChallanNumber(e.target.value)}
+                    style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '15px' }}
+                  />
+                  <button 
+                    onClick={() => handleCollect(emi)}
+                    disabled={collecting}
+                    style={{ flex: 1, backgroundColor: '#F59E0B', color: 'white', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: 'bold', cursor: collecting ? 'not-allowed' : 'pointer', opacity: collecting ? 0.7 : 1 }}
+                  >
+                    {collecting ? 'Collecting...' : 'Collected'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoanDetails;
