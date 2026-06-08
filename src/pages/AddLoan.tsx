@@ -10,7 +10,7 @@ const AddLoan = () => {
     loanAmount: '',
     interestRate: '',
     emiAmount: '',
-    totalInstallments: '',
+    totalInstallments: '24',
     startDate: new Date().toISOString().split('T')[0],
     emiStartDate: new Date().toISOString().split('T')[0]
   });

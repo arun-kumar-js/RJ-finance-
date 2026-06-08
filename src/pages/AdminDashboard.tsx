@@ -55,10 +55,16 @@ const AdminDashboard = () => {
         )}
 
         {user?.role === 'admin' && (
-          <button onClick={() => navigate('/users')} className="glass-panel" style={{ padding: '16px 8px', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'white' }}>
-            <span style={{ fontSize: '28px', color: '#3B82F6' }}>👤</span>
-            <span style={{ color: '#4B5563', fontSize: '12px', fontWeight: '600' }}>Users</span>
-          </button>
+          <>
+            <button onClick={() => navigate('/users?role=collector')} className="glass-panel" style={{ padding: '16px 8px', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'white' }}>
+              <span style={{ fontSize: '28px' }}>🧑‍💼</span>
+              <span style={{ color: '#4B5563', fontSize: '12px', fontWeight: '600' }}>Collector</span>
+            </button>
+            <button onClick={() => navigate('/users')} className="glass-panel" style={{ padding: '16px 8px', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'white' }}>
+              <span style={{ fontSize: '28px', color: '#3B82F6' }}>👤</span>
+              <span style={{ color: '#4B5563', fontSize: '12px', fontWeight: '600' }}>Users</span>
+            </button>
+          </>
         )}
 
       </div>
@@ -115,6 +121,55 @@ const AdminDashboard = () => {
                 ₹{cards?.todayCollection?.toLocaleString() || 0}
               </p>
               <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>Today's Collection</h3>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
+              <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>📅</span>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFC107', margin: '0 0 4px 0' }}>
+                ₹{cards?.monthlyCollection?.toLocaleString() || 0}
+              </p>
+              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>Monthly Collection</h3>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
+              <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>📊</span>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFC107', margin: '0 0 4px 0' }}>
+                ₹{cards?.yearlyCollection?.toLocaleString() || 0}
+              </p>
+              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>Yearly Collection</h3>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
+              <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>💰</span>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFC107', margin: '0 0 4px 0' }}>
+                ₹{cards?.totalGiven?.toLocaleString() || 0}
+              </p>
+              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>Total Given</h3>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
+              <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>✔️</span>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFC107', margin: '0 0 4px 0' }}>
+                ₹{cards?.totalCollected?.toLocaleString() || 0}
+              </p>
+              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>Total Collected</h3>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
+              <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>⏳</span>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFC107', margin: '0 0 4px 0' }}>
+                ₹{cards?.totalPending?.toLocaleString() || 0}
+              </p>
+              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>Total Pending</h3>
+            </div>
+
+
+            <div className="glass-panel" style={{ padding: '16px', background: 'white', borderLeft: '4px solid #EF4444' }}>
+              <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>🔴</span>
+              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#EF4444', margin: '0 0 4px 0' }}>
+                {cards?.overdueCount?.toLocaleString() || 0} EMIs
+              </p>
+              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>Overdue Count</h3>
             </div>
 
           </div>

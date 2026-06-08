@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loginUser } from '../redux/slices/authSlice';
 import { useTranslation } from '../hooks/useTranslation';
+import { setLanguage } from '../redux/slices/languageSlice';
 
 const Login = () => {
   const [mobile, setMobile] = useState('');
@@ -10,6 +11,7 @@ const Login = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
   const { loading, error } = useAppSelector((state) => state.auth);
+  const { language } = useAppSelector((state) => state.language);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +27,28 @@ const Login = () => {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', width: '100vw', margin: '-32px' }}>
-      <div className="glass-panel animate-fade-in" style={{ padding: '40px', width: '100%', maxWidth: '400px' }}>
+      <div className="glass-panel animate-fade-in" style={{ padding: '40px', width: '100%', maxWidth: '400px', position: 'relative' }}>
+        
+        <button 
+          type="button"
+          onClick={() => dispatch(setLanguage(language === 'en' ? 'ta' : 'en'))}
+          style={{ 
+            position: 'absolute', 
+            top: '20px', 
+            right: '20px', 
+            background: 'var(--primary)', 
+            color: 'white', 
+            border: 'none', 
+            padding: '4px 10px', 
+            borderRadius: '12px', 
+            cursor: 'pointer',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          }}
+        >
+          {language === 'en' ? 'தமிழ்' : 'EN'}
+        </button>
+
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h1 style={{ color: 'var(--primary)', fontSize: '32px', marginBottom: '8px' }}>RJ Finance</h1>
           <p style={{ color: 'var(--text-muted)' }}>{t('loginTitle')}</p>
@@ -37,11 +60,15 @@ const Login = () => {
           <div className="input-group">
             <label className="input-label">Mobile Number</label>
             <input 
-              type="text" 
+              type="tel" 
               className="input-field" 
               value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                if (val.length <= 10) setMobile(val);
+              }}
               placeholder="Enter mobile number"
+              maxLength={10}
             />
           </div>
 

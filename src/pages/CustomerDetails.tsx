@@ -23,10 +23,11 @@ const CustomerDetails = () => {
       setCustomer(custRes.data);
 
       const loansRes = await API.get('/loans', { params: { customerId: id } });
-      setLoans(loansRes.data.loans || []);
+      const fetchedLoans = Array.isArray(loansRes.data) ? loansRes.data : (loansRes.data.loans || []);
+      setLoans(fetchedLoans);
 
-      if (loansRes.data.loans?.length > 0) {
-        const activeLoan = loansRes.data.loans.find((l: any) => l.status === 'active') || loansRes.data.loans[0];
+      if (fetchedLoans.length > 0) {
+        const activeLoan = fetchedLoans.find((l: any) => l.status === 'active') || fetchedLoans[0];
         const emiRes = await API.get(`/loans/${activeLoan._id}/emis`);
         setEmis(emiRes.data);
       }
@@ -65,70 +66,134 @@ const CustomerDetails = () => {
 
   const activeLoan = loans.find(l => l.status === 'active');
   const nextEmi = emis.find(e => e.status !== 'Paid');
+  
+  const STATUS_COLORS: any = {
+    active: '#10B981',
+    closed: '#64748B',
+    overdue: '#EF4444'
+  };
 
   return (
-    <div className="animate-fade-in" style={{ padding: '20px' }}>
-      <button onClick={() => navigate(-1)} className="btn-primary" style={{ marginBottom: '20px', background: 'var(--bg-card)', color: 'white', border: '1px solid var(--border)' }}>
-        ← Back
-      </button>
-
-      <div className="glass-panel" style={{ padding: '24px', display: 'flex', gap: '24px', alignItems: 'center', marginBottom: '24px' }}>
-        <img 
-          src={customer.photoUrl || 'https://via.placeholder.com/100'} 
-          alt={customer.customerName}
-          style={{ width: '100px', height: '100px', borderRadius: '50px', objectFit: 'cover', border: '3px solid var(--primary)' }}
-        />
-        <div>
-          <h1 style={{ color: 'var(--primary)', margin: '0 0 8px 0' }}>{customer.customerName}</h1>
-          <p style={{ color: 'var(--text-muted)', margin: '0 0 4px 0' }}>📞 {customer.phone}</p>
-          <p style={{ color: 'var(--text-muted)', margin: '0 0 4px 0' }}>📍 {customer.address}</p>
-          <p style={{ color: 'var(--text-muted)', margin: 0 }}>Line: {customer.lineId?.lineName || 'N/A'}</p>
-        </div>
+    <div className="animate-fade-in" style={{ padding: '0 20px', maxWidth: '800px', margin: '0 auto', paddingBottom: '40px' }}>
+      
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', marginTop: '20px' }}>
+        <button 
+          onClick={() => navigate(-1)} 
+          style={{ width: '36px', height: '36px', backgroundColor: '#F1F5F9', color: '#1E293B', borderRadius: '18px', border: 'none', fontSize: '24px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', paddingBottom: '4px' }}
+        >
+          ‹
+        </button>
+        <h1 style={{ color: '#1E293B', fontSize: '24px', fontWeight: 'bold', margin: 0, flex: 1 }}>Customer Details</h1>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <h2 style={{ color: 'var(--text-main)', marginBottom: '16px' }}>Loan Information</h2>
-          {activeLoan ? (
-            <div>
-              <p style={{ margin: '8px 0', color: 'var(--text-muted)' }}>Loan Amount: <strong style={{ color: 'var(--text-main)' }}>₹{activeLoan.loanAmount}</strong></p>
-              <p style={{ margin: '8px 0', color: 'var(--text-muted)' }}>Total Pending: <strong style={{ color: 'var(--danger)' }}>₹{activeLoan.totalPending}</strong></p>
-              <p style={{ margin: '8px 0', color: 'var(--text-muted)' }}>EMI Amount: <strong style={{ color: 'var(--text-main)' }}>₹{activeLoan.emiAmount}</strong></p>
-              <p style={{ margin: '8px 0', color: 'var(--text-muted)' }}>Progress: <strong style={{ color: 'var(--success)' }}>{activeLoan.paidInstallments} / {activeLoan.totalInstallments}</strong> paid</p>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>No active loan found.</p>
-              {user?.role !== 'collector' && (
-                <button onClick={() => navigate(`/add-loan/${customer._id}`)} className="btn-primary">
-                  Create New Loan
-                </button>
-              )}
-            </div>
+      {/* Profile Card */}
+      <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', marginBottom: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border)' }}>
+        
+        {/* Profile Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
+          {customer.photoUrl && customer.photoUrl.startsWith('http') ? (
+            <img 
+              src={customer.photoUrl} 
+              alt={customer.customerName}
+              style={{ width: '80px', height: '80px', borderRadius: '40px', objectFit: 'cover', border: '3px solid #EAB308' }}
+              onError={(e) => {
+                (e.target as any).style.display = 'none';
+                (e.target as any).nextSibling.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div style={{ display: (!customer.photoUrl || !customer.photoUrl.startsWith('http')) ? 'flex' : 'none', width: '80px', height: '80px', borderRadius: '40px', backgroundColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center', fontSize: '36px', fontWeight: 'bold', color: '#64748B', border: '3px solid #EAB308', flexShrink: 0 }}>
+            {customer.customerName?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <h2 style={{ color: '#1E293B', margin: '0 0 8px 0', fontSize: '24px', fontWeight: 'bold' }}>{customer.customerName}</h2>
+            {customer.guardianName && <p style={{ color: '#64748B', margin: '0 0 8px 0', fontSize: '14px', fontWeight: '600' }}>C/O {customer.guardianName}</p>}
+            <span style={{ backgroundColor: STATUS_COLORS[customer.status] || '#64748B', color: 'white', fontWeight: 'bold', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', display: 'inline-block' }}>
+              {customer.status?.toUpperCase()}
+            </span>
+          </div>
+        </div>
+
+        {/* Info Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '16px' }}>
+          <div>
+            <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Phone Number</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>📞 {customer.phone}</p>
+          </div>
+          <div>
+            <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Aadhar Number</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>💳 {customer.aadharNumber || 'N/A'}</p>
+          </div>
+          <div>
+            <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Bond Number</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>🔖 {customer.bondNumber || 'N/A'}</p>
+          </div>
+          <div>
+            <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Occupation</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>💼 {customer.occupation || 'N/A'}</p>
+          </div>
+        </div>
+
+        <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '16px 0' }} />
+        
+        <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Address</p>
+        <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>📍 {customer.street}, {customer.village}</p>
+
+        <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '16px 0' }} />
+
+        <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Line</p>
+        <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>🗺️ {customer.lineId?.lineName} {customer.lineId?.description ? `- ${customer.lineId.description}` : ''}</p>
+      </div>
+
+      {/* Loans Section */}
+      <div style={{ marginTop: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1E293B', margin: 0 }}>Loans</h2>
+          {user?.role !== 'collector' && (
+            <button 
+              onClick={() => navigate(`/add-loan/${customer._id}`)} 
+              style={{ backgroundColor: '#10B981', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}
+            >
+              + Create Loan
+            </button>
           )}
         </div>
 
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <h2 style={{ color: 'var(--text-main)', marginBottom: '16px' }}>Upcoming EMI</h2>
-          {nextEmi ? (
-            <div style={{ textAlign: 'center' }}>
-              <h1 style={{ color: 'var(--primary)', fontSize: '48px', margin: '20px 0' }}>₹{nextEmi.amount}</h1>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>Installment {nextEmi.installmentNumber}</p>
-              <button 
-                onClick={() => handleCollect(nextEmi)}
-                className="btn-primary" 
-                style={{ width: '100%', fontSize: '18px', padding: '16px' }}
+        {loans.length === 0 ? (
+          <div style={{ padding: '32px', backgroundColor: 'white', borderRadius: '16px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border)' }}>
+            <p style={{ color: '#94A3B8', fontSize: '15px', fontWeight: '600', margin: 0 }}>No active or closed loans found.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {loans.map(loan => (
+              <div 
+                key={loan._id} 
+                onClick={() => navigate(`/loans/${loan._id}`)}
+                style={{ backgroundColor: 'white', borderRadius: '16px', padding: '20px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border)', borderLeft: '4px solid #6366F1' }}
               >
-                Collect EMI
-              </button>
-            </div>
-          ) : activeLoan ? (
-            <p style={{ color: 'var(--success)', textAlign: 'center', marginTop: '40px' }}>All EMIs Paid! 🎉</p>
-          ) : (
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginTop: '40px' }}>N/A</p>
-          )}
-        </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#1E293B' }}>
+                    #{loan.loanNumber} - ₹{loan.loanAmount.toLocaleString('en-IN')}
+                  </h3>
+                  <span style={{ backgroundColor: STATUS_COLORS[loan.status] || '#64748B', color: 'white', fontSize: '11px', fontWeight: 'bold', padding: '4px 12px', borderRadius: '12px' }}>
+                    {loan.status?.toUpperCase()}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <p style={{ margin: 0, fontSize: '14px', color: '#64748B', fontWeight: '500' }}>Interest: {loan.interestRate}%</p>
+                  <p style={{ margin: 0, fontSize: '14px', color: '#64748B', fontWeight: '500' }}>EMI: ₹{loan.emiAmount}</p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <p style={{ margin: 0, fontSize: '14px', color: '#64748B', fontWeight: '500' }}>Paid: ₹{loan.totalPaid}</p>
+                  <p style={{ margin: 0, fontSize: '14px', color: '#EF4444', fontWeight: 'bold' }}>Pending: ₹{loan.totalPending}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
     </div>
   );
 };

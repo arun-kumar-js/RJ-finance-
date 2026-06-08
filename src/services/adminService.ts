@@ -44,3 +44,8 @@ export const getAnalytics = async (endpoint: string, params?: any) => {
   const res = await API.get(`/analytics/${endpoint}`, { params });
   return res.data;
 };
+
+export const getUserStats = async (id: string) => {
+  const res = await API.get(`/users/${id}/stats`);
+  return res.data;
+};

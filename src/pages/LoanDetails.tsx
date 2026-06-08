@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getLoan, getEmiSchedule, deleteLoan } from '../services/loanService';
+import { getLoan, getEmiSchedule, deleteLoan, closeLoan } from '../services/loanService';
 import { collectEmi } from '../services/financeService';
 import { useAppSelector } from '../redux/hooks';
 
@@ -14,6 +14,10 @@ const LoanDetails = () => {
   const [loading, setLoading] = useState(true);
   const [collecting, setCollecting] = useState(false);
   const [challanNumber, setChallanNumber] = useState('');
+  
+  const [closeModalVisible, setCloseModalVisible] = useState(false);
+  const [closeAmount, setCloseAmount] = useState('');
+  const [closeChallan, setCloseChallan] = useState('');
 
   useEffect(() => {
     fetchLoan();
@@ -73,6 +77,22 @@ const LoanDetails = () => {
     }
   };
 
+  const handleCloseClick = () => {
+    setCloseAmount('');
+    setCloseChallan('');
+    setCloseModalVisible(true);
+  };
+
+  const handleConfirmClose = async () => {
+    try {
+      setCloseModalVisible(false);
+      await closeLoan(id!, closeAmount.trim(), closeChallan.trim());
+      fetchLoan();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to close loan');
+    }
+  };
+
   if (loading || !loan) {
     return <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading Loan Details...</div>;
   }
@@ -96,9 +116,16 @@ const LoanDetails = () => {
           <button onClick={() => navigate(-1)} style={{ position: 'absolute', left: 0, background: 'none', border: 'none', color: 'white', fontSize: '28px', cursor: 'pointer' }}>‹</button>
           <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Loan Details #{loan.loanNumber}</h1>
           {user?.role === 'admin' && (
-            <button onClick={handleDelete} style={{ position: 'absolute', right: 0, width: '36px', height: '36px', borderRadius: '18px', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', fontSize: '18px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              🗑️
-            </button>
+            <div style={{ position: 'absolute', right: 0, display: 'flex', gap: '8px' }}>
+              {loan.status !== 'closed' && (
+                <button onClick={handleCloseClick} style={{ padding: '4px 12px', borderRadius: '18px', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>
+                  Close
+                </button>
+              )}
+              <button onClick={handleDelete} style={{ width: '36px', height: '36px', borderRadius: '18px', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', fontSize: '18px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                🗑️
+              </button>
+            </div>
           )}
         </div>
 
@@ -113,8 +140,12 @@ const LoanDetails = () => {
         </div>
         
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ color: '#CBD5E1', fontSize: '14px', fontWeight: '600' }}>Remaining</span>
-          <span style={{ color: '#EF4444', fontSize: '16px', fontWeight: 'bold' }}>₹{remaining?.toLocaleString()}</span>
+          <span style={{ color: loan.status === 'closed' ? '#F59E0B' : '#CBD5E1', fontSize: '14px', fontWeight: '600' }}>
+            {loan.status === 'closed' ? 'Discount Price' : 'Remaining'}
+          </span>
+          <span style={{ color: loan.status === 'closed' ? '#F59E0B' : '#EF4444', fontSize: '16px', fontWeight: 'bold' }}>
+            ₹{remaining?.toLocaleString()}
+          </span>
         </div>
       </div>
 
@@ -122,7 +153,7 @@ const LoanDetails = () => {
         <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1E293B', marginBottom: '16px' }}>EMI Schedule</h2>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {schedule.map((emi) => (
+          {(loan.status === 'closed' ? schedule.filter(e => e.status === 'Paid') : schedule).map((emi) => (
             <div key={emi._id} style={{ backgroundColor: 'white', borderRadius: '16px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border)' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -150,7 +181,7 @@ const LoanDetails = () => {
                     type="text"
                     placeholder="Challan No"
                     value={challanNumber}
-                    onChange={(e) => setChallanNumber(e.target.value)}
+                    onChange={(e) => setChallanNumber(e.target.value.toUpperCase())}
                     style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '15px' }}
                   />
                   <button 
@@ -166,6 +197,47 @@ const LoanDetails = () => {
           ))}
         </div>
       </div>
+
+      {closeModalVisible && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '400px' }}>
+            <h3 style={{ marginTop: 0, color: '#1E3A5F', fontSize: '18px', fontWeight: 'bold', textAlign: 'center' }}>Force Close Loan</h3>
+            <p style={{ color: '#64748B', fontSize: '14px', textAlign: 'center', marginBottom: '20px' }}>Enter amount collected and challan to close (optional).</p>
+            
+            <input 
+              type="number" 
+              placeholder="Amount (₹)" 
+              value={closeAmount}
+              onChange={e => setCloseAmount(e.target.value)}
+              style={{ width: '100%', padding: '12px', marginBottom: '12px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '16px', boxSizing: 'border-box' }}
+            />
+            
+            <input 
+              type="text" 
+              placeholder="Challan Number" 
+              value={closeChallan}
+              onChange={e => setCloseChallan(e.target.value.toUpperCase())}
+              style={{ width: '100%', padding: '12px', marginBottom: '24px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '16px', boxSizing: 'border-box', textTransform: 'uppercase' }}
+            />
+            
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                onClick={() => setCloseModalVisible(false)}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#F1F5F9', color: '#1E293B', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmClose}
+                style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#1E3A5F', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                Confirm Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getUsers, createUser, deleteUser } from '../services/adminService';
 import { getLines } from '../services/lineService';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Users = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -10,6 +10,9 @@ const Users = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [form, setForm] = useState({ name: '', phone: '', password: '', role: 'collector', assignedLines: [] as string[] });
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const roleFilter = queryParams.get('role');
 
   useEffect(() => {
     fetchData();
@@ -19,7 +22,12 @@ const Users = () => {
     try {
       setLoading(true);
       const [uRes, lRes] = await Promise.all([getUsers(), getLines()]);
-      setUsers(uRes);
+      
+      let filteredUsers = uRes;
+      if (roleFilter) {
+        filteredUsers = uRes.filter((u: any) => u.role === roleFilter);
+      }
+      setUsers(filteredUsers);
       setLines(lRes);
     } catch (err) {
       console.error(err);
@@ -74,7 +82,15 @@ const Users = () => {
   return (
     <div className="animate-fade-in" style={{ padding: '0 20px', maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h1 style={{ color: '#1E293B', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Collectors / Users</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button 
+            onClick={() => navigate(-1)} 
+            style={{ width: '36px', height: '36px', backgroundColor: '#F1F5F9', color: '#1E293B', borderRadius: '18px', border: 'none', fontSize: '24px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', paddingBottom: '4px' }}
+          >
+            ‹
+          </button>
+          <h1 style={{ color: '#1E293B', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Collectors / Users</h1>
+        </div>
         <button 
           onClick={() => setModalVisible(true)} 
           style={{ width: '36px', height: '36px', backgroundColor: '#6366F1', color: 'white', borderRadius: '18px', border: 'none', fontSize: '22px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
@@ -108,8 +124,10 @@ const Users = () => {
                   justifyContent: 'space-between',
                   alignItems: 'center', 
                   boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  border: '1px solid var(--border)'
+                  border: '1px solid var(--border)',
+                  cursor: 'pointer'
                 }}
+                onClick={() => navigate(`/users/${u._id}`)}
               >
                 <div>
                   <h3 style={{ color: '#1E293B', fontSize: '16px', margin: '0 0 4px 0', fontWeight: 'bold' }}>{u.name}</h3>
@@ -131,7 +149,10 @@ const Users = () => {
                 </div>
                 
                 <button 
-                  onClick={() => handleDelete(u._id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(u._id);
+                  }}
                   style={{ width: '40px', height: '40px', backgroundColor: '#FEF2F2', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                 >
                   🗑️

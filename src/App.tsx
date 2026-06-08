@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from './redux/hooks';
 import { setToken, setUser } from './redux/slices/authSlice';
+import { setLanguage } from './redux/slices/languageSlice';
 
 // Import Pages
 import Login from './pages/Login';
@@ -15,6 +16,7 @@ import Loans from './pages/Loans';
 import LoanDetails from './pages/LoanDetails';
 import Lines from './pages/Lines';
 import Users from './pages/Users';
+import UserDetails from './pages/UserDetails';
 
 const PrivateRoute = ({ children, role }: { children: React.ReactNode, role?: string }) => {
   const { token, user } = useAppSelector(state => state.auth);
@@ -28,6 +30,7 @@ const PrivateRoute = ({ children, role }: { children: React.ReactNode, role?: st
 function App() {
   const dispatch = useAppDispatch();
   const { token, user } = useAppSelector(state => state.auth);
+  const { language } = useAppSelector(state => state.language);
 
   useEffect(() => {
     // Check localStorage for token and user on web instead of AsyncStorage
@@ -71,15 +74,18 @@ function App() {
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button style={{ 
+              <button 
+                onClick={() => dispatch(setLanguage(language === 'en' ? 'ta' : 'en'))}
+                style={{ 
                 background: 'rgba(255,255,255,0.1)', 
                 color: 'white', 
                 border: 'none', 
                 padding: '6px 12px', 
                 borderRadius: '16px', 
-                cursor: 'pointer' 
+                cursor: 'pointer',
+                fontWeight: 'bold'
               }}>
-                தமிழ்
+                {language === 'en' ? 'தமிழ்' : 'English'}
               </button>
               <button 
                 onClick={() => {
@@ -119,6 +125,7 @@ function App() {
             <Route path="/loans/:id" element={<PrivateRoute role="admin"><LoanDetails /></PrivateRoute>} />
             <Route path="/lines" element={<PrivateRoute role="admin"><Lines /></PrivateRoute>} />
             <Route path="/users" element={<PrivateRoute role="admin"><Users /></PrivateRoute>} />
+            <Route path="/users/:id" element={<PrivateRoute role="admin"><UserDetails /></PrivateRoute>} />
           </Routes>
         </main>
       </div>

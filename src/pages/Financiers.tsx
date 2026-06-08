@@ -59,7 +59,15 @@ const Financiers = () => {
   return (
     <div className="animate-fade-in" style={{ padding: '0 20px', maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h1 style={{ color: '#EAB308', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Financiers</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button 
+            onClick={() => navigate(-1)} 
+            style={{ width: '36px', height: '36px', backgroundColor: '#F1F5F9', color: '#1E293B', borderRadius: '18px', border: 'none', fontSize: '24px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', paddingBottom: '4px' }}
+          >
+            ‹
+          </button>
+          <h1 style={{ color: '#EAB308', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Financiers</h1>
+        </div>
         <button 
           onClick={() => setModalVisible(true)} 
           style={{ width: '36px', height: '36px', backgroundColor: '#EAB308', color: '#000', borderRadius: '18px', border: 'none', fontSize: '22px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
@@ -87,8 +95,10 @@ const Financiers = () => {
                 justifyContent: 'space-between',
                 alignItems: 'center', 
                 boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                border: '1px solid #EAB308'
+                border: '1px solid #EAB308',
+                cursor: 'pointer'
               }}
+              onClick={() => navigate(`/users/${f._id}`)}
             >
               <div>
                 <h3 style={{ color: '#1E293B', fontSize: '16px', margin: '0 0 4px 0', fontWeight: 'bold' }}>{f.name}</h3>
@@ -99,7 +109,10 @@ const Financiers = () => {
               </div>
               
               <button 
-                onClick={() => handleDelete(f._id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(f._id);
+                }}
                 style={{ width: '40px', height: '40px', backgroundColor: '#FEF2F2', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
               >
                 🗑️

@@ -24,3 +24,8 @@ export const deleteLoan = async (id: string) => {
   const res = await API.delete(`/loans/${id}`);
   return res.data;
 };
+
+export const closeLoan = async (id: string, forceCloseAmount?: string) => {
+  const res = await API.patch(`/loans/${id}/close`, { forceCloseAmount });
+  return res.data;
+};

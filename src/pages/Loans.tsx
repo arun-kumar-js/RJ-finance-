@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import API from '../services/api';
+import { getLines } from '../services/lineService';
 import { useNavigate } from 'react-router-dom';
 
 const Loans = () => {
@@ -9,22 +10,41 @@ const Loans = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchLoans();
-  }, []);
+  const [lines, setLines] = useState<any[]>([]);
+  const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!search) {
-      setFilteredLoans(loans);
-    } else {
+    fetchLoans();
+    fetchLines();
+  }, []);
+
+  const fetchLines = async () => {
+    try {
+      const data = await getLines();
+      setLines(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    let filtered = loans;
+    
+    if (selectedLineId) {
+      filtered = filtered.filter(l => l.customerId?.lineId?._id === selectedLineId);
+    }
+
+    if (search) {
       const lower = search.toLowerCase();
-      setFilteredLoans(loans.filter(l => 
+      filtered = filtered.filter(l => 
         l.customerId?.customerName?.toLowerCase().includes(lower) ||
         l.customerId?.phone?.includes(lower) ||
         l.loanNumber?.toString().includes(lower)
-      ));
+      );
     }
-  }, [search, loans]);
+
+    setFilteredLoans(filtered);
+  }, [search, selectedLineId, loans]);
 
   const fetchLoans = async () => {
     try {
@@ -49,7 +69,15 @@ const Loans = () => {
   return (
     <div className="animate-fade-in" style={{ padding: '0 20px', maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h1 style={{ color: '#1E293B', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>All Loans</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button 
+            onClick={() => navigate(-1)} 
+            style={{ width: '36px', height: '36px', backgroundColor: '#F1F5F9', color: '#1E293B', borderRadius: '18px', border: 'none', fontSize: '24px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', paddingBottom: '4px' }}
+          >
+            ‹
+          </button>
+          <h1 style={{ color: '#1E293B', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>All Loans</h1>
+        </div>
       </div>
 
       <div style={{ marginBottom: '24px' }}>
@@ -62,6 +90,46 @@ const Loans = () => {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
+
+      {lines.length > 0 && (
+        <div style={{ display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '16px', marginBottom: '8px', msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+          <button
+            onClick={() => setSelectedLineId(null)}
+            style={{
+              padding: '10px 16px',
+              borderRadius: '12px',
+              border: selectedLineId === null ? 'none' : '1px solid #E2E8F0',
+              backgroundColor: selectedLineId === null ? '#6366F1' : '#F1F5F9',
+              color: selectedLineId === null ? 'white' : '#475569',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            All Lines
+          </button>
+          {lines.map(line => (
+            <button
+              key={line._id}
+              onClick={() => setSelectedLineId(line._id)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                border: selectedLineId === line._id ? 'none' : '1px solid #E2E8F0',
+                backgroundColor: selectedLineId === line._id ? '#6366F1' : '#F1F5F9',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                textAlign: 'left'
+              }}
+            >
+              <span style={{ color: selectedLineId === line._id ? 'white' : '#475569', fontWeight: 'bold', fontSize: '14px' }}>{line.lineName}</span>
+              {line.description && <span style={{ color: selectedLineId === line._id ? 'rgba(255,255,255,0.8)' : '#64748B', fontSize: '11px', marginTop: '2px' }}>{line.description}</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}><p style={{ color: 'var(--text-muted)' }}>Loading loans...</p></div>
