@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { getUsers, createUser, deleteUser } from '../services/adminService';
+import { getUsers, createUser, deleteUser, updateUser } from '../services/adminService';
 import { useNavigate } from 'react-router-dom';
 
 const Financiers = () => {
   const [financiers, setFinanciers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', password: '', role: 'finance' });
   const navigate = useNavigate();
 
@@ -25,25 +26,47 @@ const Financiers = () => {
     }
   };
 
-  const handleCreate = async () => {
-    if (!form.name || !form.phone || !form.password) {
+  const handleSubmit = async () => {
+    if (!form.name || !form.phone || (!editingId && !form.password)) {
       alert('Name, phone, and password are required');
       return;
     }
     try {
-      await createUser({
-        name: form.name,
-        mobile: form.phone,
-        password: form.password,
-        role: 'finance',
-        assignedLines: []
-      });
+      if (editingId) {
+        await updateUser(editingId, {
+          name: form.name,
+          mobile: form.phone,
+          ...(form.password ? { password: form.password } : {}),
+          role: 'finance',
+          assignedLines: []
+        });
+      } else {
+        await createUser({
+          name: form.name,
+          mobile: form.phone,
+          password: form.password,
+          role: 'finance',
+          assignedLines: []
+        });
+      }
       setModalVisible(false);
+      setEditingId(null);
       setForm({ name: '', phone: '', password: '', role: 'finance' });
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create financier');
+      alert(err.response?.data?.message || 'Failed to save financier');
     }
+  };
+
+  const handleEdit = (u: any) => {
+    setEditingId(u._id);
+    setForm({
+      name: u.name,
+      phone: u.phone || u.mobile,
+      password: '',
+      role: 'finance'
+    });
+    setModalVisible(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -69,7 +92,11 @@ const Financiers = () => {
           <h1 style={{ color: '#EAB308', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Financiers</h1>
         </div>
         <button 
-          onClick={() => setModalVisible(true)} 
+          onClick={() => {
+            setEditingId(null);
+            setForm({ name: '', phone: '', password: '', role: 'finance' });
+            setModalVisible(true);
+          }} 
           style={{ width: '36px', height: '36px', backgroundColor: '#EAB308', color: '#000', borderRadius: '18px', border: 'none', fontSize: '22px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
         >
           +
@@ -108,15 +135,26 @@ const Financiers = () => {
                 </span>
               </div>
               
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(f._id);
-                }}
-                style={{ width: '40px', height: '40px', backgroundColor: '#FEF2F2', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-              >
-                🗑️
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(f);
+                  }}
+                  style={{ width: '40px', height: '40px', backgroundColor: '#F3F4F6', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                >
+                  ✏️
+                </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(f._id);
+                  }}
+                  style={{ width: '40px', height: '40px', backgroundColor: '#FEF2F2', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -126,7 +164,9 @@ const Financiers = () => {
       {modalVisible && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', width: '100%', maxWidth: '400px', border: '1px solid #EAB308' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1E293B', margin: '0 0 20px 0' }}>Add New Financier</h2>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1E293B', margin: '0 0 20px 0' }}>
+              {editingId ? 'Edit Financier' : 'Add New Financier'}
+            </h2>
             
             <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '6px', display: 'block' }}>Name *</label>
             <input className="input-field" style={{ width: '100%', marginBottom: '16px' }} placeholder="e.g. John Doe" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
@@ -134,12 +174,14 @@ const Financiers = () => {
             <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '6px', display: 'block' }}>Phone *</label>
             <input className="input-field" style={{ width: '100%', marginBottom: '16px' }} placeholder="10 digits" maxLength={10} value={form.phone} onChange={e => setForm({...form, phone: e.target.value.replace(/[^0-9]/g, '')})} />
             
-            <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '6px', display: 'block' }}>Password *</label>
+            <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '6px', display: 'block' }}>Password {editingId ? '(Leave blank to keep unchanged)' : '*'}</label>
             <input className="input-field" style={{ width: '100%', marginBottom: '20px' }} type="password" placeholder="Minimum 6 characters" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => setModalVisible(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 20px' }}>Cancel</button>
-              <button onClick={handleCreate} style={{ backgroundColor: '#EAB308', border: 'none', color: '#000', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>Save</button>
+              <button onClick={handleSubmit} style={{ backgroundColor: '#EAB308', border: 'none', color: '#000', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>
+                {editingId ? 'Update' : 'Save'}
+              </button>
             </div>
           </div>
         </div>

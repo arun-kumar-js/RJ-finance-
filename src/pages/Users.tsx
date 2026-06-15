@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getUsers, createUser, deleteUser } from '../services/adminService';
+import { getUsers, createUser, deleteUser, updateUser } from '../services/adminService';
 import { getLines } from '../services/lineService';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -8,6 +8,7 @@ const Users = () => {
   const [lines, setLines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', password: '', role: 'collector', assignedLines: [] as string[] });
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,25 +37,48 @@ const Users = () => {
     }
   };
 
-  const handleCreate = async () => {
-    if (!form.name || !form.phone || !form.password) {
+  const handleSubmit = async () => {
+    if (!form.name || !form.phone || (!editingId && !form.password)) {
       alert('Name, phone, and password are required');
       return;
     }
     try {
-      await createUser({
-        name: form.name,
-        mobile: form.phone,
-        password: form.password,
-        role: form.role,
-        assignedLines: form.assignedLines
-      });
+      if (editingId) {
+        await updateUser(editingId, {
+          name: form.name,
+          mobile: form.phone,
+          ...(form.password ? { password: form.password } : {}),
+          role: form.role,
+          assignedLines: form.assignedLines
+        });
+      } else {
+        await createUser({
+          name: form.name,
+          mobile: form.phone,
+          password: form.password,
+          role: form.role,
+          assignedLines: form.assignedLines
+        });
+      }
       setModalVisible(false);
-      setForm({ name: '', phone: '', password: '', role: 'collector', assignedLines: [] });
+      setEditingId(null);
+      setForm({ name: '', phone: '', password: '', role: roleFilter || 'collector', assignedLines: [] });
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create user');
+      alert(err.response?.data?.message || 'Failed to save user');
     }
+  };
+
+  const handleEdit = (u: any) => {
+    setEditingId(u._id);
+    setForm({
+      name: u.name,
+      phone: u.phone || u.mobile,
+      password: '',
+      role: u.role,
+      assignedLines: u.assignedLines || []
+    });
+    setModalVisible(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -95,7 +119,11 @@ const Users = () => {
         </div>
         {roleFilter === 'collector' && (
           <button 
-            onClick={() => setModalVisible(true)} 
+            onClick={() => {
+              setEditingId(null);
+              setForm({ name: '', phone: '', password: '', role: 'collector', assignedLines: [] });
+              setModalVisible(true);
+            }} 
             style={{ width: '36px', height: '36px', backgroundColor: '#6366F1', color: 'white', borderRadius: '18px', border: 'none', fontSize: '22px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
           >
             +
@@ -152,15 +180,26 @@ const Users = () => {
                   </span>
                 </div>
                 
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(u._id);
-                  }}
-                  style={{ width: '40px', height: '40px', backgroundColor: '#FEF2F2', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-                >
-                  🗑️
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(u);
+                    }}
+                    style={{ width: '40px', height: '40px', backgroundColor: '#F3F4F6', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(u._id);
+                    }}
+                    style={{ width: '40px', height: '40px', backgroundColor: '#FEF2F2', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
             );
           })}
@@ -171,7 +210,9 @@ const Users = () => {
       {modalVisible && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1E293B', margin: '0 0 20px 0' }}>Add New Collection Agent</h2>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1E293B', margin: '0 0 20px 0' }}>
+              {editingId ? `Edit ${roleFilter === 'collector' ? 'Collection Agent' : 'Employee'}` : `Add New ${roleFilter === 'collector' ? 'Collection Agent' : 'Employee'}`}
+            </h2>
             
             <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '6px', display: 'block' }}>Name *</label>
             <input className="input-field" style={{ width: '100%', marginBottom: '16px' }} placeholder="e.g. John Doe" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
@@ -179,7 +220,7 @@ const Users = () => {
             <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '6px', display: 'block' }}>Phone *</label>
             <input className="input-field" style={{ width: '100%', marginBottom: '16px' }} placeholder="10 digits" maxLength={10} value={form.phone} onChange={e => setForm({...form, phone: e.target.value.replace(/[^0-9]/g, '')})} />
             
-            <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '6px', display: 'block' }}>Password *</label>
+            <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '6px', display: 'block' }}>Password {editingId ? '(Leave blank to keep unchanged)' : '*'}</label>
             <input className="input-field" style={{ width: '100%', marginBottom: '20px' }} type="password" placeholder="Minimum 6 characters" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
             
             <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '10px', display: 'block' }}>Assign Lines</label>
@@ -209,7 +250,9 @@ const Users = () => {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => setModalVisible(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 20px' }}>Cancel</button>
-              <button onClick={handleCreate} style={{ backgroundColor: '#6366F1', border: 'none', color: '#FFF', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>Save Collection Agent</button>
+              <button onClick={handleSubmit} style={{ backgroundColor: '#6366F1', border: 'none', color: '#FFF', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>
+                {editingId ? 'Update' : 'Save'}
+              </button>
             </div>
           </div>
         </div>

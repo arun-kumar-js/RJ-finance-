@@ -25,6 +25,11 @@ export const updateUserStatus = async (id: string, status: 'active' | 'inactive'
   return res.data;
 };
 
+export const updateUser = async (id: string, data: any) => {
+  const res = await API.put(`/users/${id}`, data);
+  return res.data;
+};
+
 export const getReceiptBooks = async () => {
   const res = await API.get('/receipt-books');
   return res.data;

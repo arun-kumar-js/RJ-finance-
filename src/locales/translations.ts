@@ -45,6 +45,11 @@ export const translations = {
     // ── Dashboard ─────────────────────────────────────
     dashboard: 'Dashboard',
     welcomeBack: 'Welcome back',
+    quickActions: 'Quick Actions',
+    financiers: 'Financiers',
+    officeExpenses: 'Office Expenses',
+    statistics: 'Statistics',
+    totalCollectionAgents: 'Total Collection Agents',
     totalCustomers: 'Total Customers',
     activeLoans: 'Active Loans',
     closedLoans: 'Closed Loans',
@@ -57,6 +62,10 @@ export const translations = {
     totalPending: 'Total Pending',
     totalInterest: 'Interest Earned',
     overdueCount: 'Overdue EMIs',
+    investedAmount: 'Invested Amount',
+    inHandCash: 'In Hand Cash',
+    totalExpenses: 'Total Expenses',
+    weeklyCollection: 'Weekly Collection',
 
     // Collection Agent dashboard
     totalAssigned: 'Assigned Customers',
@@ -251,6 +260,11 @@ export const translations = {
     // ── Dashboard ─────────────────────────────────────
     dashboard: 'டாஷ்போர்டு',
     welcomeBack: 'மீண்டும் வருக',
+    quickActions: 'விரைவான செயல்கள்',
+    financiers: 'நிதி வழங்குபவர்கள்',
+    officeExpenses: 'அலுவலக செலவுகள்',
+    statistics: 'புள்ளியியல்',
+    totalCollectionAgents: 'மொத்த வசூலாளர்கள்',
     totalCustomers: 'மொத்த வாடிக்கையாளர்கள்',
     activeLoans: 'செயலில் உள்ள கடன்கள்',
     closedLoans: 'முடிந்த கடன்கள்',
@@ -263,6 +277,10 @@ export const translations = {
     totalPending: 'மொத்த நிலுவை',
     totalInterest: 'வட்டி வருமானம்',
     overdueCount: 'தாமதமான தவணைகள்',
+    investedAmount: 'முதலீடு செய்யப்பட்ட தொகை',
+    inHandCash: 'கையில் உள்ள பணம்',
+    totalExpenses: 'மொத்த செலவுகள்',
+    weeklyCollection: 'வாராந்திர வசூல்',
 
     totalAssigned: 'ஒதுக்கப்பட்ட வாடிக்கையாளர்கள்',
     todayDue: 'இன்றைய நிலுவை',
