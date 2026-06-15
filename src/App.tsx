@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from './redux/hooks';
-import { setToken, setUser } from './redux/slices/authSlice';
+import { setToken, setUser, logout } from './redux/slices/authSlice';
 import { setLanguage } from './redux/slices/languageSlice';
 
 // Import Pages
@@ -23,7 +23,7 @@ import StatDetails from './pages/StatDetails';
 const PrivateRoute = ({ children, role }: { children: React.ReactNode, role?: string }) => {
   const { token, user } = useAppSelector(state => state.auth);
   
-  if (!token) return <Navigate to="/login" />;
+  if (!token) return <Navigate to="/login" replace />;
   if (role && role !== 'any') {
     if (role === 'admin' && (user?.role === 'admin' || user?.role === 'superadmin')) {
       // Allowed
@@ -86,7 +86,8 @@ function App() {
                 onClick={() => {
                   localStorage.removeItem('token');
                   localStorage.removeItem('user');
-                  window.location.href = '/login';
+                  dispatch(logout());
+                  window.location.replace('/login');
                 }}
                 style={{ 
                   background: 'rgba(239, 68, 68, 0.2)', 
