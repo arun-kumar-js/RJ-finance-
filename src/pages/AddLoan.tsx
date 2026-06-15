@@ -7,28 +7,35 @@ const AddLoan = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    loanAmount: '',
+    loanAmount: '10000',
     interestRate: '',
-    emiAmount: '',
+    emiAmount: '500',
     totalInstallments: '24',
     startDate: new Date().toISOString().split('T')[0],
     emiStartDate: new Date().toISOString().split('T')[0]
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    setForm(prev => {
+      const newForm = { ...prev, [name]: value };
+      
+      // Auto-calculate EMI if loan amount changes
+      if (name === 'loanAmount') {
+        const amount = Number(value);
+        if (!isNaN(amount) && amount > 0) {
+          newForm.emiAmount = ((amount / 10000) * 500).toString();
+        }
+      }
+      return newForm;
+    });
   };
 
   // Optional: Auto-calculate EMI if amount and installments are provided
   const handleCalculateEmi = () => {
-    const p = parseFloat(form.loanAmount);
-    const r = parseFloat(form.interestRate || '0');
-    const n = parseInt(form.totalInstallments);
-    if (!p || !n) return;
-    
-    const totalAmount = p + (p * r / 100);
-    const emi = Math.ceil(totalAmount / n);
-    setForm(prev => ({ ...prev, emiAmount: emi.toString() }));
+    // Keep this function around to avoid compilation errors on unchanged inputs,
+    // though the main EMI calculation is now in handleChange for loanAmount.
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,23 +76,31 @@ const AddLoan = () => {
         
         <div className="input-group">
           <label className="input-label">Loan Amount (₹) *</label>
-          <input name="loanAmount" type="number" value={form.loanAmount} onChange={handleChange} onBlur={handleCalculateEmi} className="input-field" placeholder="e.g. 10000" required />
+          <select name="loanAmount" value={form.loanAmount} onChange={handleChange} className="input-field" required>
+            <option value="" disabled>Select Loan Amount</option>
+            <option value="10000">₹10,000</option>
+            <option value="15000">₹15,000</option>
+            <option value="20000">₹20,000</option>
+            <option value="25000">₹25,000</option>
+            <option value="30000">₹30,000</option>
+            <option value="35000">₹35,000</option>
+            <option value="40000">₹40,000</option>
+            <option value="45000">₹45,000</option>
+            <option value="50000">₹50,000</option>
+          </select>
         </div>
 
-        <div className="input-group">
-          <label className="input-label">Interest Rate (%)</label>
-          <input name="interestRate" type="number" value={form.interestRate} onChange={handleChange} onBlur={handleCalculateEmi} className="input-field" placeholder="e.g. 10" />
-        </div>
+        {/* Removed interest rate as it's no longer used for this fixed plan */}
 
         <div className="input-group">
           <label className="input-label">Total Installments (Days) *</label>
-          <input name="totalInstallments" type="number" value={form.totalInstallments} onChange={handleChange} onBlur={handleCalculateEmi} className="input-field" placeholder="e.g. 100" required />
+          <input name="totalInstallments" type="number" value={form.totalInstallments} className="input-field" disabled style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-muted)' }} />
         </div>
 
         <div className="input-group">
           <label className="input-label">Daily EMI Amount (₹) *</label>
-          <input name="emiAmount" type="number" value={form.emiAmount} onChange={handleChange} className="input-field" placeholder="e.g. 110" required />
-          <small style={{ color: 'var(--text-muted)' }}>Auto-calculated if you click outside after entering amount & installments</small>
+          <input name="emiAmount" type="number" value={form.emiAmount} className="input-field" disabled style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-muted)' }} />
+          <small style={{ color: 'var(--text-muted)' }}>Auto-calculated based on ₹500 per ₹10,000 loan</small>
         </div>
 
         <div className="input-group">

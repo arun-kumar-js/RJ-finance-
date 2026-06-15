@@ -58,7 +58,7 @@ export const translations = {
     totalInterest: 'Interest Earned',
     overdueCount: 'Overdue EMIs',
 
-    // Collector dashboard
+    // Collection Agent dashboard
     totalAssigned: 'Assigned Customers',
     todayDue: "Today's Due",
     collectionTarget: 'Collection Target',
@@ -83,7 +83,7 @@ export const translations = {
     enterBond: 'Enter bond number',
     photoUrl: 'Photo URL',
     selectLine: 'Select Line',
-    selectCollector: 'Select Collector',
+    selectCollector: 'Select Collection Agent',
     customerDetails: 'Customer Details',
     noCustomers: 'No customers found',
 
@@ -143,7 +143,7 @@ export const translations = {
     totalLoanAmount: 'Total Loan',
     totalCollection: 'Collected',
     pendingAmount: 'Pending',
-    assignCollector: 'Assign Collector',
+    assignCollector: 'Assign Collection Agent',
     noLines: 'No lines found',
 
     // ── Receipt Books ─────────────────────────────────
@@ -159,7 +159,7 @@ export const translations = {
     noReceiptBooks: 'No receipt books found',
 
     // ── Users ─────────────────────────────────────────
-    users: 'Users',
+    users: 'Employee Details',
     addUser: 'Add User',
     userName: 'Full Name',
     enterUserName: 'Enter full name',
@@ -168,10 +168,10 @@ export const translations = {
     selectRole: 'Select Role',
     admin: 'Admin',
     finance: 'Finance',
-    collector: 'Collector',
+    collector: 'Collection Agent',
     deactivate: 'Deactivate',
     activate: 'Activate',
-    noUsers: 'No users found',
+    noUsers: 'No employees found',
 
     // ── Analytics ─────────────────────────────────────
     analytics: 'Analytics',
@@ -181,7 +181,7 @@ export const translations = {
     monthly: 'Monthly',
     yearly: 'Yearly',
     collectionChart: 'Collection Chart',
-    collectorPerformance: 'Collector Performance',
+    collectorPerformance: 'Collection Agent Performance',
     linePerformance: 'Line Performance',
     cashFlow: 'Cash Flow',
     interestEarnings: 'Interest Earnings',

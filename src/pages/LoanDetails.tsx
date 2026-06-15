@@ -115,7 +115,7 @@ const LoanDetails = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px', position: 'relative' }}>
           <button onClick={() => navigate(-1)} style={{ position: 'absolute', left: 0, background: 'none', border: 'none', color: 'white', fontSize: '28px', cursor: 'pointer' }}>‹</button>
           <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Loan Details #{loan.loanNumber}</h1>
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'superadmin') && (
             <div style={{ position: 'absolute', right: 0, display: 'flex', gap: '8px' }}>
               {loan.status !== 'closed' && (
                 <button onClick={handleCloseClick} style={{ padding: '4px 12px', borderRadius: '18px', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}>

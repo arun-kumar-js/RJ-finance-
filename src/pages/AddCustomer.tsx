@@ -30,7 +30,14 @@ const AddCustomer = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === 'aadharNumber') {
+      setForm({ ...form, [name]: value.replace(/[^0-9]/g, '').slice(0, 12) });
+    } else if (name === 'phone') {
+      setForm({ ...form, [name]: value.replace(/[^0-9]/g, '').slice(0, 10) });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,7 +86,7 @@ const AddCustomer = () => {
 
         <div className="input-group">
           <label className="input-label">Aadhar Number</label>
-          <input name="aadharNumber" value={form.aadharNumber} onChange={handleChange} className="input-field" placeholder="12-digit Aadhar" />
+          <input name="aadharNumber" value={form.aadharNumber} onChange={handleChange} className="input-field" placeholder="12-digit Aadhar" maxLength={12} pattern="\d{12}" title="Please enter exactly 12 digits" />
         </div>
 
         <div className="input-group">

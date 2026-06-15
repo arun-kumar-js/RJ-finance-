@@ -3,6 +3,7 @@ import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { loginUser } from '../redux/slices/authSlice';
 import { useTranslation } from '../hooks/useTranslation';
 import { setLanguage } from '../redux/slices/languageSlice';
+import logo from '../assets/rj_logo.png';
 
 const Login = () => {
   const [mobile, setMobile] = useState('');
@@ -50,6 +51,7 @@ const Login = () => {
         </button>
 
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <img src={logo} alt="RJ Finance Logo" style={{ width: '80px', height: '80px', borderRadius: '16px', marginBottom: '16px', objectFit: 'contain' }} />
           <h1 style={{ color: 'var(--primary)', fontSize: '32px', marginBottom: '8px' }}>RJ Finance</h1>
           <p style={{ color: 'var(--text-muted)' }}>{t('loginTitle')}</p>
         </div>

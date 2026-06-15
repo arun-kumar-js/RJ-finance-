@@ -17,12 +17,20 @@ import LoanDetails from './pages/LoanDetails';
 import Lines from './pages/Lines';
 import Users from './pages/Users';
 import UserDetails from './pages/UserDetails';
+import Expenses from './pages/Expenses';
+import StatDetails from './pages/StatDetails';
 
 const PrivateRoute = ({ children, role }: { children: React.ReactNode, role?: string }) => {
   const { token, user } = useAppSelector(state => state.auth);
   
   if (!token) return <Navigate to="/login" />;
-  if (role && role !== 'any' && user?.role !== role) return <Navigate to="/" />;
+  if (role && role !== 'any') {
+    if (role === 'admin' && (user?.role === 'admin' || user?.role === 'superadmin')) {
+      // Allowed
+    } else if (user?.role !== role) {
+      return <Navigate to="/" />;
+    }
+  }
   
   return <>{children}</>;
 };
@@ -58,19 +66,6 @@ function App() {
               <h1 style={{ color: '#FFC107', fontSize: '20px', margin: '0 0 4px 0', fontWeight: 'bold' }}>
                 Welcome back, {user?.name?.split(' ')[0]}!
               </h1>
-              <span style={{ 
-                background: '#FFC107', 
-                color: '#000', 
-                padding: '2px 8px', 
-                borderRadius: '12px', 
-                fontSize: '11px', 
-                fontWeight: 'bold',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                🔑 {user?.role?.toUpperCase()}
-              </span>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -121,11 +116,13 @@ function App() {
             <Route path="/add-loan/:customerId" element={<PrivateRoute><AddLoan /></PrivateRoute>} />
             <Route path="/customer/:id" element={<PrivateRoute><CustomerDetails /></PrivateRoute>} />
             <Route path="/financiers" element={<PrivateRoute role="admin"><Financiers /></PrivateRoute>} />
-            <Route path="/loans" element={<PrivateRoute role="admin"><Loans /></PrivateRoute>} />
-            <Route path="/loans/:id" element={<PrivateRoute role="admin"><LoanDetails /></PrivateRoute>} />
-            <Route path="/lines" element={<PrivateRoute role="admin"><Lines /></PrivateRoute>} />
+            <Route path="/loans" element={<PrivateRoute><Loans /></PrivateRoute>} />
+            <Route path="/loans/:id" element={<PrivateRoute><LoanDetails /></PrivateRoute>} />
+            <Route path="/lines" element={<PrivateRoute><Lines /></PrivateRoute>} />
+            <Route path="/expenses" element={<PrivateRoute><Expenses /></PrivateRoute>} />
             <Route path="/users" element={<PrivateRoute role="admin"><Users /></PrivateRoute>} />
             <Route path="/users/:id" element={<PrivateRoute role="admin"><UserDetails /></PrivateRoute>} />
+            <Route path="/stat-details/:type" element={<PrivateRoute role="any"><StatDetails /></PrivateRoute>} />
           </Routes>
         </main>
       </div>

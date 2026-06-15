@@ -89,21 +89,25 @@ const Users = () => {
           >
             ‹
           </button>
-          <h1 style={{ color: '#1E293B', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Collectors / Users</h1>
+          <h1 style={{ color: '#1E293B', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
+            {roleFilter === 'collector' ? 'Collection Agents' : 'Employee Details'}
+          </h1>
         </div>
-        <button 
-          onClick={() => setModalVisible(true)} 
-          style={{ width: '36px', height: '36px', backgroundColor: '#6366F1', color: 'white', borderRadius: '18px', border: 'none', fontSize: '22px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
-        >
-          +
-        </button>
+        {roleFilter === 'collector' && (
+          <button 
+            onClick={() => setModalVisible(true)} 
+            style={{ width: '36px', height: '36px', backgroundColor: '#6366F1', color: 'white', borderRadius: '18px', border: 'none', fontSize: '22px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+          >
+            +
+          </button>
+        )}
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px' }}><p style={{ color: 'var(--text-muted)' }}>Loading users...</p></div>
       ) : users.length === 0 ? (
         <div style={{ padding: '40px', textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: '16px', fontWeight: '600' }}>No Users found.</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '16px', fontWeight: '600' }}>No Employees found.</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '40px' }}>
@@ -136,8 +140,8 @@ const Users = () => {
                     <p style={{ color: '#6366F1', fontSize: '12px', margin: '0 0 8px 0', fontWeight: '600' }}>📍 {assignedLineNames}</p>
                   )}
                   <span style={{ 
-                    backgroundColor: u.role === 'admin' ? '#FEF2F2' : '#EEF2FF', 
-                    color: u.role === 'admin' ? '#EF4444' : '#6366F1', 
+                    backgroundColor: (u.role === 'admin' || u.role === 'superadmin') ? '#FEF2F2' : '#EEF2FF', 
+                    color: (u.role === 'admin' || u.role === 'superadmin') ? '#EF4444' : '#6366F1', 
                     fontSize: '10px', 
                     fontWeight: 'bold', 
                     padding: '4px 8px', 
@@ -167,7 +171,7 @@ const Users = () => {
       {modalVisible && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '24px', padding: '24px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1E293B', margin: '0 0 20px 0' }}>Add New Collector</h2>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1E293B', margin: '0 0 20px 0' }}>Add New Collection Agent</h2>
             
             <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#64748B', marginBottom: '6px', display: 'block' }}>Name *</label>
             <input className="input-field" style={{ width: '100%', marginBottom: '16px' }} placeholder="e.g. John Doe" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
@@ -205,7 +209,7 @@ const Users = () => {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => setModalVisible(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 20px' }}>Cancel</button>
-              <button onClick={handleCreate} style={{ backgroundColor: '#6366F1', border: 'none', color: '#FFF', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>Save Collector</button>
+              <button onClick={handleCreate} style={{ backgroundColor: '#6366F1', border: 'none', color: '#FFF', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>Save Collection Agent</button>
             </div>
           </div>
         </div>

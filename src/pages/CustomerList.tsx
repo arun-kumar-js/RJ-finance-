@@ -164,6 +164,9 @@ const CustomerList = () => {
                 </div>
                 <p style={{ color: '#64748B', fontSize: '13px', margin: '0 0 2px 0' }}>📞 {c.phone}</p>
                 <p style={{ color: '#6366F1', fontSize: '13px', margin: '0 0 6px 0', fontWeight: '600' }}>📍 {c.lineId?.lineName || 'Unassigned'}</p>
+                {c.createdBy?.name && (
+                  <p style={{ color: '#64748B', fontSize: '11px', margin: '0 0 6px 0', fontStyle: 'italic' }}>👤 Added by: {c.createdBy.name}</p>
+                )}
                 
                 {c.loans?.length > 0 && (
                   <div style={{ display: 'flex', gap: '6px' }}>

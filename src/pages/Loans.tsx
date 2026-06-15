@@ -182,6 +182,9 @@ const Loans = () => {
                 </div>
 
                 <p style={{ color: '#6366F1', fontSize: '12px', fontWeight: '600', marginBottom: '12px' }}>{item.loanType}</p>
+                {item.createdBy?.name && (
+                  <p style={{ color: '#64748B', fontSize: '11px', margin: '0 0 12px 0', fontStyle: 'italic' }}>👤 Issued by: {item.createdBy.name}</p>
+                )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E2E8F0', paddingTop: '12px' }}>
                   <div>
