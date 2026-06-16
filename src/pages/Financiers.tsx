@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getUsers, createUser, deleteUser, updateUser } from '../services/adminService';
 import { useNavigate } from 'react-router-dom';
+import PasswordPromptModal from '../components/PasswordPromptModal';
 
 const Financiers = () => {
   const [financiers, setFinanciers] = useState<any[]>([]);
@@ -9,6 +10,10 @@ const Financiers = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', phone: '', password: '', role: 'finance' });
   const navigate = useNavigate();
+
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [passwordAction, setPasswordAction] = useState<'delete' | 'save' | null>(null);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
@@ -26,11 +31,17 @@ const Financiers = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmitClick = () => {
     if (!form.name || !form.phone || (!editingId && !form.password)) {
       alert('Name, phone, and password are required');
       return;
     }
+    setPasswordAction('save');
+    setPasswordModalOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    setPasswordModalOpen(false);
     try {
       if (editingId) {
         await updateUser(editingId, {
@@ -69,10 +80,19 @@ const Financiers = () => {
     setModalVisible(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
     if (!window.confirm('Are you sure you want to delete this Financier?')) return;
+    setUserToDelete(id);
+    setPasswordAction('delete');
+    setPasswordModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setPasswordModalOpen(false);
+    if (!userToDelete) return;
     try {
-      await deleteUser(id);
+      await deleteUser(userToDelete);
+      setUserToDelete(null);
       fetchUsers();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to delete');
@@ -148,7 +168,7 @@ const Financiers = () => {
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDelete(f._id);
+                    handleDeleteClick(f._id);
                   }}
                   style={{ width: '40px', height: '40px', backgroundColor: '#FEF2F2', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                 >

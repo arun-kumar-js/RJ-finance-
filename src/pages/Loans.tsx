@@ -39,7 +39,8 @@ const Loans = () => {
       filtered = filtered.filter(l => 
         l.customerId?.customerName?.toLowerCase().includes(lower) ||
         l.customerId?.phone?.includes(lower) ||
-        l.loanNumber?.toString().includes(lower)
+        l.loanNumber?.toString().includes(lower) ||
+        l.bondNumber?.toLowerCase().includes(lower)
       );
     }
 
@@ -162,9 +163,24 @@ const Loans = () => {
                       #{item.loanNumber} - {custName}
                     </h3>
                     <p style={{ color: '#64748B', fontSize: '13px', margin: '0 0 2px 0' }}>📞 {item.customerId?.phone || 'N/A'}</p>
+                    {item.customerId && (item.customerId.street || item.customerId.village) && (
+                      <p style={{ color: '#64748B', fontSize: '13px', margin: '0 0 2px 0' }}>
+                        📍 {item.customerId.street || ''}{item.customerId.street && item.customerId.village ? ', ' : ''}{item.customerId.village || ''}
+                      </p>
+                    )}
+                    {item.bondNumber && (
+                      <p style={{ color: '#EAB308', fontSize: '13px', margin: '0 0 2px 0', fontWeight: 'bold' }}>
+                        🔖 Bond: {item.bondNumber}
+                      </p>
+                    )}
+                    {item.cashSource && (
+                      <p style={{ color: '#10B981', fontSize: '13px', margin: '0 0 2px 0', fontWeight: 'bold' }}>
+                        💵 Source: {item.cashSource === 'in_hand_cash' ? 'In Hand Cash' : 'Collection Cash'}
+                      </p>
+                    )}
                     {item.customerId?.lineId && (
                       <p style={{ color: '#6366F1', fontSize: '13px', margin: '0', fontWeight: '600' }}>
-                        🔖 {item.customerId.lineId.lineName}
+                        🗺️ {item.customerId.lineId.lineName}
                       </p>
                     )}
                   </div>

@@ -91,14 +91,6 @@ const AdminDashboard = () => {
               <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('totalCustomers')}</h3>
             </div>
 
-            <div onClick={() => navigate('/stat-details/total-collectors')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
-              <span style={{ fontSize: '24px', color: '#60A5FA', display: 'block', marginBottom: '8px' }}>👤</span>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFC107', margin: '0 0 4px 0' }}>
-                {cards?.totalCollectors?.toLocaleString() || 0}
-              </p>
-              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('totalCollectionAgents')}</h3>
-            </div>
-
             {/* --- LOAN STATUS --- */}
             <div onClick={() => navigate('/stat-details/active-loans')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
               <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>💳</span>
@@ -141,14 +133,6 @@ const AdminDashboard = () => {
               <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('totalGiven')}</h3>
             </div>
 
-            <div onClick={() => navigate('/stat-details/invested-amount')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #10B981' }}>
-              <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>💸</span>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#10B981', margin: '0 0 4px 0' }}>
-                ₹{cards?.totalInvested?.toLocaleString() || 0}
-              </p>
-              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('investedAmount')}</h3>
-            </div>
-
             <div onClick={() => navigate('/stat-details/total-pending')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
               <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>⏳</span>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFC107', margin: '0 0 4px 0' }}>
@@ -174,12 +158,12 @@ const AdminDashboard = () => {
               <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('totalExpenses')}</h3>
             </div>
 
-            <div onClick={() => navigate('/stat-details/in-hand-cash')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #10B981' }}>
+            <div onClick={() => navigate('/stat-details/collection-cash')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #10B981' }}>
               <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>💵</span>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#10B981', margin: '0 0 4px 0' }}>
-                ₹{cards?.inHandCash?.toLocaleString() || 0}
+                ₹{cards?.collectionCash?.toLocaleString() || 0}
               </p>
-              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('inHandCash')}</h3>
+              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('collectionCash')}</h3>
             </div>
 
             <div onClick={() => navigate('/stat-details/weekly-collection')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>

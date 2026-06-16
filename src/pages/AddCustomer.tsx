@@ -11,7 +11,9 @@ const AddCustomer = () => {
     guardianName: '',
     phone: '',
     aadharNumber: '',
-    address: '',
+    occupation: '',
+    street: '',
+    village: '',
     lineId: ''
   });
 
@@ -61,7 +63,7 @@ const AddCustomer = () => {
 
   return (
     <div className="animate-fade-in" style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <button onClick={() => navigate(-1)} className="btn-primary" style={{ marginBottom: '20px', background: 'var(--bg-card)', color: 'white', border: '1px solid var(--border)' }}>
+      <button onClick={() => navigate(-1)} className="btn-primary" style={{ marginBottom: '20px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
         ← Back
       </button>
 
@@ -90,8 +92,18 @@ const AddCustomer = () => {
         </div>
 
         <div className="input-group">
-          <label className="input-label">Address</label>
-          <textarea name="address" value={form.address} onChange={handleChange} className="input-field" placeholder="Full address" rows={3}></textarea>
+          <label className="input-label">Occupation</label>
+          <input name="occupation" value={form.occupation} onChange={handleChange} className="input-field" placeholder="Enter occupation" />
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">Street / Area</label>
+          <input name="street" value={form.street} onChange={handleChange} className="input-field" placeholder="Street name or area" />
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">Village / Town</label>
+          <input name="village" value={form.village} onChange={handleChange} className="input-field" placeholder="Village or town" />
         </div>
 
         <div className="input-group">

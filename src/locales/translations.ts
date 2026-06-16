@@ -63,7 +63,7 @@ export const translations = {
     totalInterest: 'Interest Earned',
     overdueCount: 'Overdue EMIs',
     investedAmount: 'Invested Amount',
-    inHandCash: 'In Hand Cash',
+    collectionCash: 'Collection Cash',
     totalExpenses: 'Total Expenses',
     weeklyCollection: 'Weekly Collection',
 
@@ -278,7 +278,7 @@ export const translations = {
     totalInterest: 'வட்டி வருமானம்',
     overdueCount: 'தாமதமான தவணைகள்',
     investedAmount: 'முதலீடு செய்யப்பட்ட தொகை',
-    inHandCash: 'கையில் உள்ள பணம்',
+    collectionCash: 'வசூல் பணம்',
     totalExpenses: 'மொத்த செலவுகள்',
     weeklyCollection: 'வாராந்திர வசூல்',
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getLoan, getEmiSchedule, deleteLoan, closeLoan } from '../services/loanService';
 import { collectEmi } from '../services/financeService';
 import { useAppSelector } from '../redux/hooks';
+import PasswordPromptModal from '../components/PasswordPromptModal';
 
 const LoanDetails = () => {
   const { id } = useParams();
@@ -18,6 +19,9 @@ const LoanDetails = () => {
   const [closeModalVisible, setCloseModalVisible] = useState(false);
   const [closeAmount, setCloseAmount] = useState('');
   const [closeChallan, setCloseChallan] = useState('');
+
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [passwordAction, setPasswordAction] = useState<'delete' | 'close' | null>(null);
 
   useEffect(() => {
     fetchLoan();
@@ -67,8 +71,14 @@ const LoanDetails = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
     if (!window.confirm('Are you sure you want to delete this loan?')) return;
+    setPasswordAction('delete');
+    setPasswordModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setPasswordModalOpen(false);
     try {
       await deleteLoan(id!);
       navigate(-1);
@@ -83,7 +93,13 @@ const LoanDetails = () => {
     setCloseModalVisible(true);
   };
 
+  const handleCloseConfirmClick = () => {
+    setPasswordAction('close');
+    setPasswordModalOpen(true);
+  };
+
   const handleConfirmClose = async () => {
+    setPasswordModalOpen(false);
     try {
       setCloseModalVisible(false);
       await closeLoan(id!, closeAmount.trim(), closeChallan.trim());
@@ -122,7 +138,7 @@ const LoanDetails = () => {
                   Close
                 </button>
               )}
-              <button onClick={handleDelete} style={{ width: '36px', height: '36px', borderRadius: '18px', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', fontSize: '18px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <button onClick={handleDeleteClick} style={{ width: '36px', height: '36px', borderRadius: '18px', backgroundColor: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', fontSize: '18px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 🗑️
               </button>
             </div>
@@ -134,6 +150,22 @@ const LoanDetails = () => {
           <span style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>₹{loan.loanAmount?.toLocaleString()}</span>
         </div>
         
+        {loan.bondNumber && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <span style={{ color: '#CBD5E1', fontSize: '14px', fontWeight: '600' }}>Bond Number</span>
+            <span style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>🔖 {loan.bondNumber}</span>
+          </div>
+        )}
+
+        {loan.cashSource && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <span style={{ color: '#CBD5E1', fontSize: '14px', fontWeight: '600' }}>Cash Source</span>
+            <span style={{ color: 'white', fontSize: '16px', fontWeight: 'bold' }}>
+              💵 {loan.cashSource === 'in_hand_cash' ? 'In Hand Cash' : 'Collection Cash'}
+            </span>
+          </div>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
           <span style={{ color: '#CBD5E1', fontSize: '14px', fontWeight: '600' }}>Total Paid</span>
           <span style={{ color: '#10B981', fontSize: '16px', fontWeight: 'bold' }}>₹{totalPaid?.toLocaleString()}</span>
@@ -228,7 +260,7 @@ const LoanDetails = () => {
                 Cancel
               </button>
               <button 
-                onClick={handleConfirmClose}
+                onClick={handleCloseConfirmClick}
                 style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#1E3A5F', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}
               >
                 Confirm Close
@@ -237,6 +269,13 @@ const LoanDetails = () => {
           </div>
         </div>
       )}
+
+      <PasswordPromptModal
+        isOpen={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        onSuccess={passwordAction === 'delete' ? handleConfirmDelete : handleConfirmClose}
+        title={passwordAction === 'delete' ? 'Delete Loan' : 'Close Loan'}
+      />
 
     </div>
   );

@@ -94,8 +94,8 @@ const Expenses = () => {
       {showModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '32px', position: 'relative' }}>
-            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '16px', right: '16px', background: 'transparent', border: 'none', color: 'white', fontSize: '20px', cursor: 'pointer' }}>×</button>
-            <h2 style={{ margin: '0 0 24px 0', color: 'white', fontSize: '24px' }}>Add Office Expense</h2>
+            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '16px', right: '20px', background: 'transparent', border: 'none', color: '#64748B', fontSize: '28px', fontWeight: 'bold', cursor: 'pointer' }}>×</button>
+            <h2 style={{ margin: '0 0 24px 0', color: '#1E293B', fontSize: '24px', fontWeight: 'bold' }}>Add Office Expense</h2>
             
             <form onSubmit={handleSubmit}>
               <div className="input-group">

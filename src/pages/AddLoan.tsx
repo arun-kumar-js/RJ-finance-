@@ -10,16 +10,18 @@ const AddLoan = () => {
     loanAmount: '10000',
     interestRate: '',
     emiAmount: '500',
-    totalInstallments: '24',
+    totalInstallments: '25',
     startDate: new Date().toISOString().split('T')[0],
-    emiStartDate: new Date().toISOString().split('T')[0]
+    emiStartDate: new Date().toISOString().split('T')[0],
+    bondNumber: '',
+    cashSource: 'in_hand_cash'
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
     setForm(prev => {
-      const newForm = { ...prev, [name]: value };
+      const newForm = { ...prev, [name]: name === 'bondNumber' ? value.toUpperCase() : value };
       
       // Auto-calculate EMI if loan amount changes
       if (name === 'loanAmount') {
@@ -66,7 +68,7 @@ const AddLoan = () => {
 
   return (
     <div className="animate-fade-in" style={{ padding: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <button onClick={() => navigate(-1)} className="btn-primary" style={{ marginBottom: '20px', background: 'var(--bg-card)', color: 'white', border: '1px solid var(--border)' }}>
+      <button onClick={() => navigate(-1)} className="btn-primary" style={{ marginBottom: '20px', background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
         ← Back
       </button>
 
@@ -93,14 +95,14 @@ const AddLoan = () => {
         {/* Removed interest rate as it's no longer used for this fixed plan */}
 
         <div className="input-group">
-          <label className="input-label">Total Installments (Days) *</label>
+          <label className="input-label">Total Installments (Weeks) *</label>
           <input name="totalInstallments" type="number" value={form.totalInstallments} className="input-field" disabled style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-muted)' }} />
         </div>
 
         <div className="input-group">
-          <label className="input-label">Daily EMI Amount (₹) *</label>
+          <label className="input-label">Weekly EMI Amount (₹) *</label>
           <input name="emiAmount" type="number" value={form.emiAmount} className="input-field" disabled style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-muted)' }} />
-          <small style={{ color: 'var(--text-muted)' }}>Auto-calculated based on ₹500 per ₹10,000 loan</small>
+         
         </div>
 
         <div className="input-group">
@@ -111,6 +113,19 @@ const AddLoan = () => {
         <div className="input-group">
           <label className="input-label">First EMI Date *</label>
           <input name="emiStartDate" type="date" value={form.emiStartDate} onChange={handleChange} className="input-field" required />
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">Bond Number</label>
+          <input name="bondNumber" value={form.bondNumber} onChange={handleChange} className="input-field" placeholder="Enter bond number" style={{ textTransform: 'uppercase' }} />
+        </div>
+
+        <div className="input-group">
+          <label className="input-label">Cash Source *</label>
+          <select name="cashSource" value={form.cashSource} onChange={handleChange} className="input-field" required>
+            <option value="in_hand_cash">In Hand Cash</option>
+            <option value="collection_cash">Collection Cash</option>
+          </select>
         </div>
 
         <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '20px' }} disabled={loading}>

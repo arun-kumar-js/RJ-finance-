@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { useAppSelector } from '../redux/hooks';
+import PasswordPromptModal from '../components/PasswordPromptModal';
 
 const CustomerDetails = () => {
   const { id } = useParams();
@@ -11,6 +12,7 @@ const CustomerDetails = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAppSelector(state => state.auth);
   const navigate = useNavigate();
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -61,10 +63,31 @@ const CustomerDetails = () => {
     }
   };
 
+  const handleDeleteClick = () => {
+    if (!window.confirm('Are you sure you want to delete this customer? All associated loans and collections will be deleted.')) return;
+    setPasswordModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setPasswordModalOpen(false);
+    try {
+      setLoading(true);
+      await API.delete(`/customers/${id}`);
+      alert('Customer deleted successfully!');
+      navigate('/customers');
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Error deleting customer');
+      setLoading(false);
+    }
+  };
+
   if (loading) return <div style={{ padding: '20px', color: 'var(--text-muted)' }}>Loading...</div>;
   if (!customer) return <div style={{ padding: '20px', color: 'var(--danger)' }}>Customer not found</div>;
 
   const activeLoan = loans.find(l => l.status === 'active');
+  const latestLoanWithBond = loans.find(l => l.bondNumber);
+  const activeOrLatestLoan = activeLoan || loans[0];
   const nextEmi = emis.find(e => e.status !== 'Paid');
   
   const STATUS_COLORS: any = {
@@ -85,6 +108,15 @@ const CustomerDetails = () => {
           ‹
         </button>
         <h1 style={{ color: '#1E293B', fontSize: '24px', fontWeight: 'bold', margin: 0, flex: 1 }}>Customer Details</h1>
+        {(user?.role === 'admin' || user?.role === 'superadmin') && (
+          <button 
+            onClick={handleDeleteClick} 
+            style={{ width: '36px', height: '36px', borderRadius: '18px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#EF4444', fontSize: '18px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            title="Delete Customer"
+          >
+            🗑️
+          </button>
+        )}
       </div>
 
       {/* Profile Card */}
@@ -127,18 +159,39 @@ const CustomerDetails = () => {
           </div>
           <div>
             <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Bond Number</p>
-            <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>🔖 {customer.bondNumber || 'N/A'}</p>
+            <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>🔖 {customer.bondNumber || latestLoanWithBond?.bondNumber || 'N/A'}</p>
           </div>
           <div>
             <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Occupation</p>
             <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>💼 {customer.occupation || 'N/A'}</p>
+          </div>
+          <div>
+            <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Cash Source</p>
+            {activeOrLatestLoan?.cashSource ? (
+              <span style={{ 
+                backgroundColor: activeOrLatestLoan.cashSource === 'in_hand_cash' ? '#DCFCE7' : '#E0F2FE', 
+                color: activeOrLatestLoan.cashSource === 'in_hand_cash' ? '#15803D' : '#0369A1', 
+                fontWeight: 'bold', 
+                padding: '4px 8px', 
+                borderRadius: '8px', 
+                fontSize: '13px', 
+                display: 'inline-block',
+                marginTop: '2px'
+              }}>
+                💵 {activeOrLatestLoan.cashSource === 'in_hand_cash' ? 'In Hand Cash' : 'Collection Cash'}
+              </span>
+            ) : (
+              <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#64748B' }}>N/A</p>
+            )}
           </div>
         </div>
 
         <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '16px 0' }} />
         
         <p style={{ margin: '0 0 4px 0', fontSize: '11px', fontWeight: 'bold', color: '#94A3B8', textTransform: 'uppercase' }}>Address</p>
-        <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>📍 {customer.street}, {customer.village}</p>
+        <p style={{ margin: 0, fontSize: '15px', fontWeight: '600', color: '#334155' }}>
+          📍 {customer.street || customer.village ? `${customer.street || ''}${customer.street && customer.village ? ', ' : ''}${customer.village || ''}` : (customer.lineId?.lineName || 'N/A')}
+        </p>
 
         <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '16px 0' }} />
 
@@ -180,11 +233,29 @@ const CustomerDetails = () => {
                     {loan.status?.toUpperCase()}
                   </span>
                 </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px' }}>
+                  {loan.bondNumber && (
+                    <p style={{ margin: 0, fontSize: '14px', color: '#EAB308', fontWeight: 'bold' }}>
+                      🔖 Bond Number: {loan.bondNumber}
+                    </p>
+                  )}
+                  {loan.cashSource && (
+                    <p style={{ margin: 0, fontSize: '14px', color: '#10B981', fontWeight: 'bold' }}>
+                      💵 Cash Source: {loan.cashSource === 'in_hand_cash' ? 'In Hand Cash' : 'Collection Cash'}
+                    </p>
+                  )}
+                  {(customer.street || customer.village) && (
+                    <p style={{ margin: 0, fontSize: '13px', color: '#64748B', fontWeight: '600' }}>
+                      📍 Address: {customer.street || ''}{customer.street && customer.village ? ', ' : ''}{customer.village || ''}
+                    </p>
+                  )}
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <p style={{ margin: 0, fontSize: '14px', color: '#64748B', fontWeight: '500' }}>Interest: {loan.interestRate}%</p>
                   <p style={{ margin: 0, fontSize: '14px', color: '#64748B', fontWeight: '500' }}>EMI: ₹{loan.emiAmount}</p>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <p style={{ margin: 0, fontSize: '14px', color: '#64748B', fontWeight: '500' }}>Paid: ₹{loan.totalPaid}</p>
                   <p style={{ margin: 0, fontSize: '14px', color: '#EF4444', fontWeight: 'bold' }}>Pending: ₹{loan.totalPending}</p>
                 </div>
@@ -193,6 +264,13 @@ const CustomerDetails = () => {
           </div>
         )}
       </div>
+
+      <PasswordPromptModal
+        isOpen={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        onSuccess={handleConfirmDelete}
+        title="Delete Customer"
+      />
 
     </div>
   );

@@ -147,11 +147,23 @@ const CustomerList = () => {
                 border: '1px solid var(--border)'
               }}
             >
-              <img 
-                src={c.photoUrl || 'https://via.placeholder.com/56'} 
-                alt={c.customerName}
-                style={{ width: '56px', height: '56px', borderRadius: '28px', objectFit: 'cover', backgroundColor: '#E2E8F0', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-              />
+              <div style={{ position: 'relative', width: '56px', height: '56px', flexShrink: 0 }}>
+                {c.photoUrl && c.photoUrl.startsWith('http') ? (
+                  <img 
+                    src={c.photoUrl} 
+                    alt={c.customerName?.charAt(0).toUpperCase()}
+                    style={{ width: '56px', height: '56px', borderRadius: '28px', objectFit: 'cover', backgroundColor: '#E2E8F0', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                    onError={(e) => {
+                      (e.target as any).style.display = 'none';
+                      const sibling = (e.target as any).nextSibling;
+                      if (sibling) sibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div style={{ display: (!c.photoUrl || !c.photoUrl.startsWith('http')) ? 'flex' : 'none', width: '56px', height: '56px', borderRadius: '28px', backgroundColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center', fontSize: '24px', fontWeight: 'bold', color: '#64748B', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', boxSizing: 'border-box' }}>
+                  {c.customerName?.charAt(0).toUpperCase()}
+                </div>
+              </div>
               
               <div style={{ flex: 1, marginLeft: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -162,6 +174,11 @@ const CustomerList = () => {
                     </span>
                   )}
                 </div>
+                {c.guardianName && (
+                  <p style={{ color: '#64748B', fontSize: '13px', margin: '0 0 4px 0', fontWeight: '600' }}>
+                    C/O {c.guardianName}
+                  </p>
+                )}
                 <p style={{ color: '#64748B', fontSize: '13px', margin: '0 0 2px 0' }}>📞 {c.phone}</p>
                 <p style={{ color: '#6366F1', fontSize: '13px', margin: '0 0 6px 0', fontWeight: '600' }}>📍 {c.lineId?.lineName || 'Unassigned'}</p>
                 {c.createdBy?.name && (
@@ -169,10 +186,22 @@ const CustomerList = () => {
                 )}
                 
                 {c.loans?.length > 0 && (
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
                     <span style={{ backgroundColor: '#EEF2FF', color: '#6366F1', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold' }}>
                       💳 Loan #{c.loans[0].loanNumber}
                     </span>
+                    {c.loans[0].cashSource && (
+                      <span style={{ 
+                        backgroundColor: c.loans[0].cashSource === 'in_hand_cash' ? '#DCFCE7' : '#E0F2FE', 
+                        color: c.loans[0].cashSource === 'in_hand_cash' ? '#15803D' : '#0369A1', 
+                        padding: '4px 8px', 
+                        borderRadius: '8px', 
+                        fontSize: '11px', 
+                        fontWeight: 'bold' 
+                      }}>
+                        💵 {c.loans[0].cashSource === 'in_hand_cash' ? 'In Hand' : 'Collection'}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

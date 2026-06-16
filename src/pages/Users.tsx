@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getUsers, createUser, deleteUser, updateUser } from '../services/adminService';
 import { getLines } from '../services/lineService';
 import { useNavigate, useLocation } from 'react-router-dom';
+import PasswordPromptModal from '../components/PasswordPromptModal';
 
 const Users = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -14,6 +15,10 @@ const Users = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const roleFilter = queryParams.get('role');
+
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [passwordAction, setPasswordAction] = useState<'delete' | 'save' | null>(null);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -37,11 +42,17 @@ const Users = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmitClick = () => {
     if (!form.name || !form.phone || (!editingId && !form.password)) {
       alert('Name, phone, and password are required');
       return;
     }
+    setPasswordAction('save');
+    setPasswordModalOpen(true);
+  };
+
+  const handleConfirmSave = async () => {
+    setPasswordModalOpen(false);
     try {
       if (editingId) {
         await updateUser(editingId, {
@@ -81,10 +92,19 @@ const Users = () => {
     setModalVisible(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string) => {
     if (!window.confirm('Are you sure you want to delete this User?')) return;
+    setUserToDelete(id);
+    setPasswordAction('delete');
+    setPasswordModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setPasswordModalOpen(false);
+    if (!userToDelete) return;
     try {
-      await deleteUser(id);
+      await deleteUser(userToDelete);
+      setUserToDelete(null);
       fetchData();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to delete');
@@ -193,7 +213,7 @@ const Users = () => {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDelete(u._id);
+                      handleDeleteClick(u._id);
                     }}
                     style={{ width: '40px', height: '40px', backgroundColor: '#FEF2F2', borderRadius: '20px', border: 'none', fontSize: '16px', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
                   >
@@ -250,13 +270,21 @@ const Users = () => {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => setModalVisible(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 20px' }}>Cancel</button>
-              <button onClick={handleSubmit} style={{ backgroundColor: '#6366F1', border: 'none', color: '#FFF', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>
+              <button onClick={handleSubmitClick} style={{ backgroundColor: '#6366F1', border: 'none', color: '#FFF', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>
                 {editingId ? 'Update' : 'Save'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <PasswordPromptModal
+        isOpen={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        onSuccess={passwordAction === 'delete' ? handleConfirmDelete : handleConfirmSave}
+        title={passwordAction === 'delete' ? 'Delete User' : 'Save User'}
+      />
+
     </div>
   );
 };
