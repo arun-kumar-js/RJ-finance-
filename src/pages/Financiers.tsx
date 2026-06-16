@@ -199,13 +199,20 @@ const Financiers = () => {
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button onClick={() => setModalVisible(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 20px' }}>Cancel</button>
-              <button onClick={handleSubmit} style={{ backgroundColor: '#EAB308', border: 'none', color: '#000', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>
+              <button onClick={handleSubmitClick} style={{ backgroundColor: '#EAB308', border: 'none', color: '#000', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', padding: '12px 24px', borderRadius: '12px' }}>
                 {editingId ? 'Update' : 'Save'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <PasswordPromptModal
+        isOpen={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        onSuccess={passwordAction === 'delete' ? handleConfirmDelete : handleConfirmSave}
+        title={passwordAction === 'delete' ? 'Delete Financier' : 'Save Financier'}
+      />
     </div>
   );
 };
