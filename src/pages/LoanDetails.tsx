@@ -15,6 +15,7 @@ const LoanDetails = () => {
   const [loading, setLoading] = useState(true);
   const [collecting, setCollecting] = useState(false);
   const [challanNumber, setChallanNumber] = useState('');
+  const [collectAmount, setCollectAmount] = useState('');
   
   const [closeModalVisible, setCloseModalVisible] = useState(false);
   const [closeAmount, setCloseAmount] = useState('');
@@ -26,6 +27,15 @@ const LoanDetails = () => {
   useEffect(() => {
     fetchLoan();
   }, [id]);
+
+  useEffect(() => {
+    if (schedule && schedule.length > 0) {
+      const pending = schedule.find(s => s.status !== 'Paid');
+      if (pending) {
+        setCollectAmount((pending.amount - (pending.paidAmount || 0)).toString());
+      }
+    }
+  }, [schedule]);
 
   const fetchLoan = async () => {
     try {
@@ -43,12 +53,16 @@ const LoanDetails = () => {
   };
 
   const handleCollect = async (emi: any) => {
+    if (!collectAmount.trim() || isNaN(Number(collectAmount)) || Number(collectAmount) <= 0) {
+      alert("Please enter a valid collect amount!");
+      return;
+    }
     if (!challanNumber.trim()) {
       alert("Challan Number is required!");
       return;
     }
 
-    if (!window.confirm(`Collect EMI ₹${emi.amount} for Installment ${emi.installmentNumber}?`)) return;
+    if (!window.confirm(`Collect ₹${collectAmount} for Installment ${emi.installmentNumber}?`)) return;
 
     try {
       setCollecting(true);
@@ -58,7 +72,7 @@ const LoanDetails = () => {
         emiScheduleId: emi._id,
         receiptBookNumber: 'CHALLAN',
         receiptNumber: challanNumber.trim(),
-        amount: emi.amount,
+        amount: Number(collectAmount),
         collectionDate: new Date().toISOString()
       });
       setChallanNumber('');
@@ -113,7 +127,13 @@ const LoanDetails = () => {
     return <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Loading Loan Details...</div>;
   }
 
-  const nextPendingEmi = schedule.find(s => s.status.toLowerCase() === 'pending');
+  const completedEmis = schedule.filter(s => s.status === 'Paid');
+  const nextPendingEmi = schedule.find(s => s.status !== 'Paid');
+  const displaySchedule = [...completedEmis];
+  if (nextPendingEmi) {
+    displaySchedule.push(nextPendingEmi);
+  }
+  displaySchedule.sort((a, b) => a.installmentNumber - b.installmentNumber);
   const totalPaid = loan.totalPaid || 0;
   const remaining = (loan.emiAmount * loan.totalInstallments) - totalPaid;
 
@@ -130,7 +150,7 @@ const LoanDetails = () => {
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px', position: 'relative' }}>
           <button onClick={() => navigate(-1)} style={{ position: 'absolute', left: 0, background: 'none', border: 'none', color: 'white', fontSize: '28px', cursor: 'pointer' }}>‹</button>
-          <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Loan Details #{loan.loanNumber}</h1>
+          <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Loan Details {loan.bondNumber || 'No Bond'}</h1>
           {(user?.role === 'admin' || user?.role === 'superadmin') && (
             <div style={{ position: 'absolute', right: 0, display: 'flex', gap: '8px' }}>
               {loan.status !== 'closed' && (
@@ -185,7 +205,7 @@ const LoanDetails = () => {
         <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1E293B', marginBottom: '16px' }}>EMI Schedule</h2>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {(loan.status === 'closed' ? schedule.filter(e => e.status === 'Paid') : schedule).map((emi) => (
+          {displaySchedule.map((emi) => (
             <div key={emi._id} style={{ backgroundColor: 'white', borderRadius: '16px', padding: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border)' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -197,7 +217,9 @@ const LoanDetails = () => {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                 <span style={{ color: '#64748B', fontSize: '13px' }}>Due Date: {new Date(emi.dueDate).toLocaleDateString('en-GB')}</span>
-                <span style={{ color: '#1E293B', fontSize: '16px', fontWeight: 'bold' }}>₹{emi.amount}</span>
+                <span style={{ color: '#1E293B', fontSize: '16px', fontWeight: 'bold' }}>
+                  {emi.status === 'Paid' ? `Paid: ₹${emi.paidAmount}` : `Expected: ₹${emi.amount} ${emi.paidAmount > 0 ? `(Paid: ₹${emi.paidAmount})` : ''}`}
+                </span>
               </div>
 
               {emi.paidDate && (
@@ -208,18 +230,34 @@ const LoanDetails = () => {
               )}
 
               {emi._id === nextPendingEmi?._id && (
-                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                  <input
-                    type="text"
-                    placeholder="Challan No"
-                    value={challanNumber}
-                    onChange={(e) => setChallanNumber(e.target.value.toUpperCase())}
-                    style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '15px' }}
-                  />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px', borderTop: '1px solid #F1F5F9', paddingTop: '16px' }}>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '12px', color: '#64748B', fontWeight: '600' }}>Collect Amount (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="Amount"
+                        value={collectAmount}
+                        onChange={(e) => setCollectAmount(e.target.value)}
+                        style={{ padding: '12px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '15px', width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '12px', color: '#64748B', fontWeight: '600' }}>Challan No</label>
+                      <input
+                        type="text"
+                        placeholder="Challan No"
+                        value={challanNumber}
+                        onChange={(e) => setChallanNumber(e.target.value.toUpperCase())}
+                        style={{ padding: '12px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '15px', width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                  
                   <button 
                     onClick={() => handleCollect(emi)}
                     disabled={collecting}
-                    style={{ flex: 1, backgroundColor: '#F59E0B', color: 'white', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: 'bold', cursor: collecting ? 'not-allowed' : 'pointer', opacity: collecting ? 0.7 : 1 }}
+                    style={{ backgroundColor: '#F59E0B', color: 'white', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: 'bold', cursor: collecting ? 'not-allowed' : 'pointer', opacity: collecting ? 0.7 : 1 }}
                   >
                     {collecting ? 'Collecting...' : 'Collected'}
                   </button>
@@ -227,6 +265,11 @@ const LoanDetails = () => {
               )}
             </div>
           ))}
+          {displaySchedule.length === 0 && (
+            <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '24px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border)' }}>
+              <span style={{ color: '#F59E0B', fontSize: '16px', fontWeight: 'bold' }}>No pending EMI schedule.</span>
+            </div>
+          )}
         </div>
       </div>
 

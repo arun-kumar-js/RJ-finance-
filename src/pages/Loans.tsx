@@ -39,7 +39,6 @@ const Loans = () => {
       filtered = filtered.filter(l => 
         l.customerId?.customerName?.toLowerCase().includes(lower) ||
         l.customerId?.phone?.includes(lower) ||
-        l.loanNumber?.toString().includes(lower) ||
         l.bondNumber?.toLowerCase().includes(lower)
       );
     }
@@ -160,17 +159,12 @@ const Loans = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                   <div>
                     <h3 style={{ color: '#1E293B', fontSize: '16px', margin: '0 0 4px 0', fontWeight: 'bold' }}>
-                      #{item.loanNumber} - {custName}
+                      {item.bondNumber || 'No Bond'} - {custName}
                     </h3>
                     <p style={{ color: '#64748B', fontSize: '13px', margin: '0 0 2px 0' }}>📞 {item.customerId?.phone || 'N/A'}</p>
                     {item.customerId && (item.customerId.street || item.customerId.village) && (
                       <p style={{ color: '#64748B', fontSize: '13px', margin: '0 0 2px 0' }}>
                         📍 {item.customerId.street || ''}{item.customerId.street && item.customerId.village ? ', ' : ''}{item.customerId.village || ''}
-                      </p>
-                    )}
-                    {item.bondNumber && (
-                      <p style={{ color: '#EAB308', fontSize: '13px', margin: '0 0 2px 0', fontWeight: 'bold' }}>
-                        🔖 Bond: {item.bondNumber}
                       </p>
                     )}
                     {item.cashSource && (

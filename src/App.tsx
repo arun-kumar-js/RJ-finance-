@@ -22,7 +22,7 @@ import StatDetails from './pages/StatDetails';
 
 const PrivateRoute = ({ children, role }: { children: React.ReactNode, role?: string }) => {
   const { token, user } = useAppSelector(state => state.auth);
-  
+
   if (!token) return <Navigate to="/login" replace />;
   if (role && role !== 'any') {
     if (role === 'admin' && (user?.role === 'admin' || user?.role === 'superadmin')) {
@@ -31,7 +31,7 @@ const PrivateRoute = ({ children, role }: { children: React.ReactNode, role?: st
       return <Navigate to="/" />;
     }
   }
-  
+
   return <>{children}</>;
 };
 
@@ -50,27 +50,15 @@ function App() {
     }
   }, [dispatch]);
 
-  useEffect(() => {
-    const handlePageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        window.location.reload();
-      }
-    };
-    window.addEventListener('pageshow', handlePageShow);
-    return () => {
-      window.removeEventListener('pageshow', handlePageShow);
-    };
-  }, []);
-
   return (
     <BrowserRouter>
       <div className="app-container">
         {token && (
-          <header style={{ 
-            background: 'var(--bg-header)', 
-            padding: '16px 24px', 
-            display: 'flex', 
-            justifyContent: 'space-between', 
+          <header style={{
+            background: 'var(--bg-header)',
+            padding: '16px 24px',
+            display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'center',
             boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
           }}>
@@ -79,35 +67,35 @@ function App() {
                 Welcome back, {user?.name?.split(' ')[0]}!
               </h1>
             </div>
-            
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <button 
+              <button
                 onClick={() => dispatch(setLanguage(language === 'en' ? 'ta' : 'en'))}
-                style={{ 
-                background: 'rgba(255,255,255,0.1)', 
-                color: 'white', 
-                border: 'none', 
-                padding: '6px 12px', 
-                borderRadius: '16px', 
-                cursor: 'pointer',
-                fontWeight: 'bold'
-              }}>
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '6px 12px',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}>
                 {language === 'en' ? 'தமிழ்' : 'English'}
               </button>
-              <button 
+              <button
                 onClick={() => {
                   localStorage.removeItem('token');
                   localStorage.removeItem('user');
                   dispatch(logout());
                   window.location.replace('/login');
                 }}
-                style={{ 
-                  background: 'rgba(239, 68, 68, 0.2)', 
-                  color: '#EF4444', 
-                  border: 'none', 
+                style={{
+                  background: 'rgba(239, 68, 68, 0.2)',
+                  color: '#EF4444',
+                  border: 'none',
                   width: '36px',
                   height: '36px',
-                  borderRadius: '18px', 
+                  borderRadius: '18px',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -122,7 +110,7 @@ function App() {
         <main className="main-content">
           <Routes>
             <Route path="/login" element={!token ? <Login /> : <Navigate to="/" />} />
-            
+
             <Route path="/" element={<PrivateRoute role="any"><AdminDashboard /></PrivateRoute>} />
             <Route path="/customers" element={<PrivateRoute><CustomerList /></PrivateRoute>} />
             <Route path="/add-customer" element={<PrivateRoute><AddCustomer /></PrivateRoute>} />

@@ -45,6 +45,11 @@ const CustomerList = () => {
 
   const canAdd = user?.role !== 'collector';
 
+  const getLineCustomerCount = (lineId: string | null) => {
+    if (!lineId) return customers.length;
+    return customers.filter(c => c.lineId?._id === lineId).length;
+  };
+
   const filteredCustomers = customers.filter(c => {
     if (!selectedLineId) return true;
     return c.lineId?._id === selectedLineId;
@@ -98,7 +103,7 @@ const CustomerList = () => {
               whiteSpace: 'nowrap'
             }}
           >
-            All Lines
+            All Lines ({getLineCustomerCount(null)})
           </button>
           {lines.map(line => (
             <button
@@ -116,7 +121,9 @@ const CustomerList = () => {
                 textAlign: 'left'
               }}
             >
-              <span style={{ color: selectedLineId === line._id ? 'white' : '#475569', fontWeight: 'bold', fontSize: '14px' }}>{line.lineName}</span>
+              <span style={{ color: selectedLineId === line._id ? 'white' : '#475569', fontWeight: 'bold', fontSize: '14px' }}>
+                {line.lineName} ({getLineCustomerCount(line._id)})
+              </span>
               {line.description && <span style={{ color: selectedLineId === line._id ? 'rgba(255,255,255,0.8)' : '#64748B', fontSize: '11px', marginTop: '2px' }}>{line.description}</span>}
             </button>
           ))}
@@ -188,7 +195,7 @@ const CustomerList = () => {
                 {c.loans?.length > 0 && (
                   <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
                     <span style={{ backgroundColor: '#EEF2FF', color: '#6366F1', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold' }}>
-                      💳 Loan #{c.loans[0].loanNumber}
+                      💳 {c.loans[0].bondNumber || 'No Bond'}
                     </span>
                     {c.loans[0].cashSource && (
                       <span style={{ 
