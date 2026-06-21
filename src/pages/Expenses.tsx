@@ -7,6 +7,7 @@ const Expenses = () => {
   const navigate = useNavigate();
   const { user } = useAppSelector(state => state.auth);
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const canAdd = isAdmin || user?.role === 'finance';
 
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +86,7 @@ const Expenses = () => {
         <button onClick={() => navigate(-1)} className="btn-primary" style={{ background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
           ← Back
         </button>
-        {isAdmin && (
+        {canAdd && (
           <button onClick={handleAddClick} className="btn-primary" style={{ background: '#10B981', border: 'none' }}>
             + Add Expense
           </button>
@@ -113,7 +114,12 @@ const Expenses = () => {
             <tbody>
               {expenses.map((exp: any) => (
                 <tr key={exp._id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '16px', color: 'var(--text-main)' }}>{new Date(exp.date).toLocaleDateString()}</td>
+                  <td style={{ padding: '16px', color: 'var(--text-main)' }}>
+                    <div>{new Date(exp.date).toLocaleDateString()}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      Entered: {exp.createdAt ? new Date(exp.createdAt).toLocaleString() : 'N/A'}
+                    </div>
+                  </td>
                   <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{exp.description}</td>
                   <td style={{ padding: '16px', color: '#EF4444', fontWeight: 'bold' }}>₹{exp.amount?.toLocaleString()}</td>
                   <td style={{ padding: '16px', fontSize: '12px', color: 'var(--text-muted)' }}>{exp.createdBy?.name || 'Unknown'}</td>
