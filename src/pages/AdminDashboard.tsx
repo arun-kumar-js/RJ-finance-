@@ -53,12 +53,14 @@ const AdminDashboard = () => {
               <span style={{ fontSize: '28px' }}>📍</span>
               <span style={{ color: '#4B5563', fontSize: '12px', fontWeight: '600' }}>{t('lines')}</span>
             </button>
-
-            <button onClick={() => navigate('/expenses')} className="glass-panel" style={{ padding: '16px 8px', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'white' }}>
-              <span style={{ fontSize: '28px' }}>🏢</span>
-              <span style={{ color: '#4B5563', fontSize: '12px', fontWeight: '600' }}>{t('officeExpenses')}</span>
-            </button>
           </>
+        )}
+
+        {(user?.role === 'admin' || user?.role === 'superadmin') && (
+          <button onClick={() => navigate('/expenses')} className="glass-panel" style={{ padding: '16px 8px', border: '1px solid var(--border)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', background: 'white' }}>
+            <span style={{ fontSize: '28px' }}>🏢</span>
+            <span style={{ color: '#4B5563', fontSize: '12px', fontWeight: '600' }}>{t('officeExpenses')}</span>
+          </button>
         )}
 
         {(user?.role === 'admin' || user?.role === 'superadmin') && (
@@ -150,13 +152,15 @@ const AdminDashboard = () => {
               <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('totalCollected')}</h3>
             </div>
 
-            <div onClick={() => navigate('/expenses')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #EF4444' }}>
-              <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>📉</span>
-              <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#EF4444', margin: '0 0 4px 0' }}>
-                ₹{cards?.totalExpenses?.toLocaleString() || 0}
-              </p>
-              <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('totalExpenses')}</h3>
-            </div>
+            {(user?.role === 'admin' || user?.role === 'superadmin') && (
+              <div onClick={() => navigate('/expenses')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #EF4444' }}>
+                <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>📉</span>
+                <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#EF4444', margin: '0 0 4px 0' }}>
+                  ₹{cards?.totalExpenses?.toLocaleString() || 0}
+                </p>
+                <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('totalExpenses')}</h3>
+              </div>
+            )}
 
             <div onClick={() => navigate('/stat-details/collection-cash')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #10B981' }}>
               <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>💵</span>

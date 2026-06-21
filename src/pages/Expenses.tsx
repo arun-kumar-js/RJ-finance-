@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import { useAppSelector } from '../redux/hooks';
 
 const Expenses = () => {
   const navigate = useNavigate();
+  const { user } = useAppSelector(state => state.auth);
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+
   const [expenses, setExpenses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   
   const [form, setForm] = useState({
     amount: '',
@@ -37,15 +42,41 @@ const Expenses = () => {
     
     try {
       setSubmitting(true);
-      await API.post('/expenses', form);
+      if (editingExpenseId) {
+        await API.put(`/expenses/${editingExpenseId}`, form);
+      } else {
+        await API.post('/expenses', form);
+      }
       setShowModal(false);
+      setEditingExpenseId(null);
       setForm({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
       fetchExpenses();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error adding expense');
+      alert(err.response?.data?.message || 'Error saving expense');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditClick = (exp: any) => {
+    setEditingExpenseId(exp._id);
+    setForm({
+      amount: exp.amount.toString(),
+      description: exp.description,
+      date: new Date(exp.date).toISOString().split('T')[0]
+    });
+    setShowModal(true);
+  };
+
+  const handleAddClick = () => {
+    setEditingExpenseId(null);
+    setForm({ amount: '', description: '', date: new Date().toISOString().split('T')[0] });
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingExpenseId(null);
   };
 
   return (
@@ -54,9 +85,11 @@ const Expenses = () => {
         <button onClick={() => navigate(-1)} className="btn-primary" style={{ background: 'var(--bg-card)', color: 'var(--text-main)', border: '1px solid var(--border)' }}>
           ← Back
         </button>
-        <button onClick={() => setShowModal(true)} className="btn-primary" style={{ background: '#10B981', border: 'none' }}>
-          + Add Expense
-        </button>
+        {isAdmin && (
+          <button onClick={handleAddClick} className="btn-primary" style={{ background: '#10B981', border: 'none' }}>
+            + Add Expense
+          </button>
+        )}
       </div>
 
       <h1 style={{ color: 'var(--primary)', marginBottom: '32px', fontSize: '32px' }}>Office Expenses</h1>
@@ -74,6 +107,7 @@ const Expenses = () => {
                 <th style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>Description</th>
                 <th style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>Amount</th>
                 <th style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>Added By</th>
+                {isAdmin && <th style={{ padding: '16px', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -83,6 +117,17 @@ const Expenses = () => {
                   <td style={{ padding: '16px', color: 'var(--text-muted)' }}>{exp.description}</td>
                   <td style={{ padding: '16px', color: '#EF4444', fontWeight: 'bold' }}>₹{exp.amount?.toLocaleString()}</td>
                   <td style={{ padding: '16px', fontSize: '12px', color: 'var(--text-muted)' }}>{exp.createdBy?.name || 'Unknown'}</td>
+                  {isAdmin && (
+                    <td style={{ padding: '16px', textAlign: 'right' }}>
+                      <button 
+                        onClick={() => handleEditClick(exp)} 
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px' }}
+                        title="Edit Expense"
+                      >
+                        ✏️
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -94,8 +139,10 @@ const Expenses = () => {
       {showModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
           <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '32px', position: 'relative' }}>
-            <button onClick={() => setShowModal(false)} style={{ position: 'absolute', top: '16px', right: '20px', background: 'transparent', border: 'none', color: '#64748B', fontSize: '28px', fontWeight: 'bold', cursor: 'pointer' }}>×</button>
-            <h2 style={{ margin: '0 0 24px 0', color: '#1E293B', fontSize: '24px', fontWeight: 'bold' }}>Add Office Expense</h2>
+            <button onClick={handleCloseModal} style={{ position: 'absolute', top: '16px', right: '20px', background: 'transparent', border: 'none', color: '#64748B', fontSize: '28px', fontWeight: 'bold', cursor: 'pointer' }}>×</button>
+            <h2 style={{ margin: '0 0 24px 0', color: '#1E293B', fontSize: '24px', fontWeight: 'bold' }}>
+              {editingExpenseId ? 'Edit Office Expense' : 'Add Office Expense'}
+            </h2>
             
             <form onSubmit={handleSubmit}>
               <div className="input-group">
