@@ -85,7 +85,7 @@ const AdminDashboard = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '16px', marginBottom: '40px' }}>
             
             {/* --- PEOPLE --- */}
-            <div onClick={() => navigate('/stat-details/total-customers')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
+            <div className="glass-panel" style={{ padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
               <span style={{ fontSize: '24px', color: '#60A5FA', display: 'block', marginBottom: '8px' }}>👥</span>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFC107', margin: '0 0 4px 0' }}>
                 {cards?.totalCustomers?.toLocaleString() || 0}

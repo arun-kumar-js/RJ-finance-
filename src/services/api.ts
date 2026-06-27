@@ -4,7 +4,7 @@ import axios from 'axios';
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API = axios.create({
   baseURL: isLocalhost ? 'http://localhost:5002/api' : 'https://rj-backend-9xr1.onrender.com/api',
-  timeout: 10000,
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
   },

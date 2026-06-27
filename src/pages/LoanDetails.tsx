@@ -57,11 +57,6 @@ const LoanDetails = () => {
       alert("Please enter a valid collect amount!");
       return;
     }
-    if (!challanNumber.trim()) {
-      alert("Challan Number is required!");
-      return;
-    }
-
     if (!window.confirm(`Collect ₹${collectAmount} for Installment ${emi.installmentNumber}?`)) return;
 
     try {
