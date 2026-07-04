@@ -18,6 +18,7 @@ import Lines from './pages/Lines';
 import Users from './pages/Users';
 import UserDetails from './pages/UserDetails';
 import Expenses from './pages/Expenses';
+import Investments from './pages/Investments';
 import StatDetails from './pages/StatDetails';
 
 const PrivateRoute = ({ children, role }: { children: React.ReactNode, role?: string }) => {
@@ -121,6 +122,7 @@ function App() {
             <Route path="/loans/:id" element={<PrivateRoute><LoanDetails /></PrivateRoute>} />
             <Route path="/lines" element={<PrivateRoute><Lines /></PrivateRoute>} />
             <Route path="/expenses" element={<PrivateRoute><Expenses /></PrivateRoute>} />
+            <Route path="/investments" element={<PrivateRoute role="admin"><Investments /></PrivateRoute>} />
             <Route path="/users" element={<PrivateRoute role="admin"><Users /></PrivateRoute>} />
             <Route path="/users/:id" element={<PrivateRoute role="admin"><UserDetails /></PrivateRoute>} />
             <Route path="/stat-details/:type" element={<PrivateRoute role="any"><StatDetails /></PrivateRoute>} />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import API from '../services/api';
 
@@ -6,16 +6,36 @@ const AddLoan = () => {
   const { customerId } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [balances, setBalances] = useState({ inHandCash: 0, collectionCash: 0 });
   const [form, setForm] = useState({
-    loanAmount: '10000',
+    loanAmount: '5000',
     interestRate: '',
-    emiAmount: '500',
+    emiAmount: '250',
     totalInstallments: '25',
     startDate: new Date().toISOString().split('T')[0],
     emiStartDate: new Date().toISOString().split('T')[0],
     bondNumber: '',
-    cashSource: 'in_hand_cash'
+    cashSource: ''
   });
+
+  useEffect(() => {
+    fetchBalances();
+  }, []);
+
+  const fetchBalances = async () => {
+    try {
+      const res = await API.get('/dashboard');
+      if (res.data?.cards) {
+        setBalances({
+          inHandCash: Math.max(0, res.data.cards.inHandCash || 0),
+          collectionCash: Math.max(0, res.data.cards.collectionCash || 0)
+        });
+        // We do not auto-select anymore, forcing the user to explicitly choose to avoid state sync issues
+      }
+    } catch (err) {
+      console.error('Failed to fetch balances', err);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -42,8 +62,15 @@ const AddLoan = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.loanAmount || !form.emiAmount || !form.totalInstallments) {
-      return alert('Please fill required fields (Amount, EMI, Installments)');
+    if (!form.loanAmount || !form.emiAmount || !form.totalInstallments || !form.cashSource) {
+      return alert('Please fill required fields (Amount, EMI, Installments, Cash Source)');
+    }
+
+    const requestedAmount = Number(form.loanAmount);
+    const selectedBalance = form.cashSource === 'in_hand_cash' ? balances.inHandCash : balances.collectionCash;
+
+    if (requestedAmount > selectedBalance) {
+      return alert(`Insufficient funds in ${form.cashSource === 'in_hand_cash' ? 'In-Hand Cash' : 'Collection Cash'}. Available: ₹${selectedBalance.toLocaleString()}`);
     }
 
     try {
@@ -80,6 +107,7 @@ const AddLoan = () => {
           <label className="input-label">Loan Amount (₹) *</label>
           <select name="loanAmount" value={form.loanAmount} onChange={handleChange} className="input-field" required>
             <option value="" disabled>Select Loan Amount</option>
+            <option value="5000">₹5,000</option>
             <option value="10000">₹10,000</option>
             <option value="15000">₹15,000</option>
             <option value="20000">₹20,000</option>
@@ -120,15 +148,22 @@ const AddLoan = () => {
           <input name="bondNumber" value={form.bondNumber} onChange={handleChange} className="input-field" placeholder="Enter bond number" style={{ textTransform: 'uppercase' }} />
         </div>
 
-        <div className="input-group">
-          <label className="input-label">Cash Source *</label>
-          <select name="cashSource" value={form.cashSource} onChange={handleChange} className="input-field" required>
-            <option value="in_hand_cash">In Hand Cash</option>
-            <option value="collection_cash">Collection Cash</option>
-          </select>
-        </div>
+        {balances.inHandCash > 0 || balances.collectionCash > 0 ? (
+          <div className="input-group">
+            <label className="input-label">Cash Source *</label>
+            <select name="cashSource" value={form.cashSource} onChange={handleChange} className="input-field" required>
+              <option value="" disabled>Select Cash Source</option>
+              {balances.inHandCash > 0 && <option value="in_hand_cash">In Hand Cash (₹{balances.inHandCash.toLocaleString()})</option>}
+              {balances.collectionCash > 0 && <option value="collection_cash">Collection Cash (₹{balances.collectionCash.toLocaleString()})</option>}
+            </select>
+          </div>
+        ) : (
+          <div className="input-group">
+            <p style={{ color: '#EF4444', fontWeight: 'bold' }}>No cash available in any source to disburse loans.</p>
+          </div>
+        )}
 
-        <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '20px' }} disabled={loading}>
+        <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '20px' }} disabled={loading || (balances.inHandCash === 0 && balances.collectionCash === 0)}>
           {loading ? 'Creating...' : 'Create Loan'}
         </button>
 

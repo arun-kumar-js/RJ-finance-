@@ -170,6 +170,16 @@ const AdminDashboard = () => {
               <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>{t('collectionCash')}</h3>
             </div>
 
+            {(user?.role === 'admin' || user?.role === 'superadmin') && (
+              <div onClick={() => navigate('/investments')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #3B82F6' }}>
+                <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>🏦</span>
+                <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#3B82F6', margin: '0 0 4px 0' }}>
+                  ₹{cards?.inHandCash?.toLocaleString() || 0}
+                </p>
+                <h3 style={{ color: '#6B7280', fontSize: '12px', fontWeight: '500', margin: 0 }}>In-Hand Cash</h3>
+              </div>
+            )}
+
             <div onClick={() => navigate('/stat-details/weekly-collection')} className="glass-panel" style={{ cursor: 'pointer', padding: '16px', background: 'white', borderLeft: '4px solid #FFC107' }}>
               <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>🏦</span>
               <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#FFC107', margin: '0 0 4px 0' }}>
