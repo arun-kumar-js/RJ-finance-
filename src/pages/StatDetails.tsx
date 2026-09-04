@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import { useTranslation } from '../hooks/useTranslation';
 
 const StatDetails = () => {
   const { type } = useParams();
   const navigate = useNavigate();
+  const { t, language } = useTranslation();
   const [data, setData] = useState<any[]>([]);
+  const [cashFlowMeta, setCashFlowMeta] = useState<any>(null);
+  const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
+  const [weekSearch, setWeekSearch] = useState('');
+  const [filterMode, setFilterMode] = useState<'completed' | 'all' | 'active'>('completed');
   const [loading, setLoading] = useState(true);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
 
@@ -50,6 +56,13 @@ const StatDetails = () => {
         } else if (type === 'yearly-collection') {
           const res = await API.get('/dashboard/yearly-collections-breakdown');
           setData(res.data);
+        } else if (type === 'weekly-cashflow') {
+          const res = await API.get('/dashboard/weekly-cashflow-breakdown');
+          setCashFlowMeta(res.data);
+          setData(res.data.weeks || []);
+          if (res.data.currentWeek) {
+            setExpandedWeek(res.data.currentWeek);
+          }
         } else {
           setData([]);
         }
@@ -253,6 +266,325 @@ const StatDetails = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      );
+    }
+
+    if (type === 'weekly-cashflow') {
+      const filteredWeeks = data.filter(item => {
+        if (filterMode === 'completed' && !item.isCompleted) return false;
+        if (filterMode === 'active' && !item.hasActivity) return false;
+        if (weekSearch.trim()) {
+          const q = weekSearch.trim().toLowerCase();
+          return (
+            item.weekNumber.toString().includes(q) ||
+            item.label.toLowerCase().includes(q) ||
+            item.dateRange.toLowerCase().includes(q)
+          );
+        }
+        return true;
+      });
+
+      const formatCurrency = (val: number) => {
+        const n = Number(val || 0);
+        if (n < 0) return `- ₹${Math.abs(n).toLocaleString('en-IN')}`;
+        return `₹${n.toLocaleString('en-IN')}`;
+      };
+
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Executive Summary Banner */}
+          {cashFlowMeta && (
+            <div style={{ background: '#0F172A', padding: '24px 28px', borderRadius: '16px', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#38BDF8' }} />
+                  <span style={{ color: '#94A3B8', fontSize: '12px', fontWeight: '700', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                    {language === 'ta' ? `நிதியாண்டு ${cashFlowMeta.year} தணிக்கை` : `FY ${cashFlowMeta.year} AUDIT LEDGER`}
+                  </span>
+                </div>
+                <div style={{ color: '#64748B', fontSize: '11px', fontWeight: '600', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                  {language === 'ta' ? 'தற்போதைய நிகர கையிருப்பு' : 'CURRENT NET HAND CASH'}
+                </div>
+                <h2 style={{ fontSize: '36px', fontWeight: '800', margin: '4px 0 6px 0', letterSpacing: '-0.5px', color: Number(cashFlowMeta.latestHandCash || 0) >= 0 ? '#34D399' : '#F87171' }}>
+                  {formatCurrency(cashFlowMeta.latestHandCash)}
+                </h2>
+                <span style={{ color: '#94A3B8', fontSize: '13px' }}>
+                  {language === 'ta' ? 'அனைத்து வரவு மற்றும் செலவுகளுக்குப் பிந்தைய தணிக்கைக் கணக்கு' : 'Audited closing balance carried across all lines'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ backgroundColor: '#1E293B', color: '#38BDF8', border: '1px solid #334155', padding: '8px 18px', borderRadius: '24px', fontSize: '13px', fontWeight: '700', letterSpacing: '0.5px' }}>
+                  {language === 'ta'
+                    ? `${cashFlowMeta.completedWeeksCount || 0} வாரங்கள் முடிந்தது`
+                    : `${cashFlowMeta.completedWeeksCount || 0} WEEKS COMPLETED`}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Controls Bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+              <input
+                type="text"
+                placeholder={language === 'ta' ? 'வார எண் தேடுக (எ.கா: 32)...' : 'Search week (e.g. 32)...'}
+                value={weekSearch}
+                onChange={(e) => setWeekSearch(e.target.value)}
+                style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '14px', outline: 'none', backgroundColor: 'white' }}
+              />
+              {weekSearch && (
+                <button
+                  onClick={() => setWeekSearch('')}
+                  style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setFilterMode('completed')}
+                style={{ padding: '10px 16px', borderRadius: '10px', border: filterMode === 'completed' ? '1px solid #0F172A' : '1px solid #CBD5E1', backgroundColor: filterMode === 'completed' ? '#0F172A' : 'white', color: filterMode === 'completed' ? 'white' : '#475569', fontWeight: '700', fontSize: '13px', cursor: 'pointer', transition: 'all 0.15s' }}
+              >
+                {language === 'ta' ? 'முடிந்த வாரங்கள்' : 'Completed Weeks'}
+              </button>
+              <button
+                onClick={() => setFilterMode('all')}
+                style={{ padding: '10px 16px', borderRadius: '10px', border: filterMode === 'all' ? '1px solid #0F172A' : '1px solid #CBD5E1', backgroundColor: filterMode === 'all' ? '#0F172A' : 'white', color: filterMode === 'all' ? 'white' : '#475569', fontWeight: '700', fontSize: '13px', cursor: 'pointer', transition: 'all 0.15s' }}
+              >
+                {language === 'ta' ? 'நடப்பு வாரம் உட்பட' : 'Include Current'}
+              </button>
+              <button
+                onClick={() => setFilterMode('active')}
+                style={{ padding: '10px 16px', borderRadius: '10px', border: filterMode === 'active' ? '1px solid #0F172A' : '1px solid #CBD5E1', backgroundColor: filterMode === 'active' ? '#0F172A' : 'white', color: filterMode === 'active' ? 'white' : '#475569', fontWeight: '700', fontSize: '13px', cursor: 'pointer', transition: 'all 0.15s' }}
+              >
+                {language === 'ta' ? 'செயல்பாடு மட்டும்' : 'Active Only'}
+              </button>
+            </div>
+          </div>
+
+          {/* Weeks Cards Grid */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {filteredWeeks.length === 0 ? (
+              <div style={{ padding: '48px', textAlign: 'center', color: '#64748B', backgroundColor: 'white', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
+                {language === 'ta' ? 'பொருந்தும் வாரங்கள் எதுவும் இல்லை' : 'No matching weeks found'}
+              </div>
+            ) : (
+              filteredWeeks.map((item: any) => {
+                const isExpanded = expandedWeek === item.weekNumber;
+                const isPositive = Number(item.nowOverallHandCash || 0) >= 0;
+                const totalOutflows = Number(item.loansGiven || 0) + Number(item.expenses || 0);
+
+                return (
+                  <div
+                    key={item.weekNumber}
+                    style={{
+                      backgroundColor: 'white',
+                      borderRadius: '14px',
+                      border: item.isCurrentWeek ? '1px solid #93C5FD' : '1px solid #E2E8F0',
+                      borderLeft: item.isCurrentWeek ? '4px solid #3B82F6' : item.hasActivity ? '4px solid #10B981' : '#CBD5E1',
+                      boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+                      overflow: 'hidden',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div
+                      onClick={() => setExpandedWeek(isExpanded ? null : item.weekNumber)}
+                      style={{
+                        padding: '16px 22px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        cursor: 'pointer',
+                        backgroundColor: item.isCurrentWeek ? '#F8FAFC' : 'white'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '16px', fontWeight: '700', color: '#0F172A' }}>{item.label}</span>
+                          {item.isCurrentWeek && (
+                            <span style={{ backgroundColor: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', letterSpacing: '0.4px' }}>
+                              {language === 'ta' ? 'நடப்பு வாரம்' : 'CURRENT'}
+                            </span>
+                          )}
+                          {item.isCompleted && (
+                            <span style={{ backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', letterSpacing: '0.4px' }}>
+                              {language === 'ta' ? 'முடிந்தது' : 'COMPLETED'}
+                            </span>
+                          )}
+                          {item.hasActivity && !item.isCurrentWeek && (
+                            <span style={{ backgroundColor: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', letterSpacing: '0.4px' }}>
+                              {language === 'ta' ? 'செயல்பாடு' : 'ACTIVE'}
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ color: '#64748B', fontSize: '12px', fontWeight: '500' }}>{item.dateRange}</span>
+                      </div>
+
+                      <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div>
+                          <div style={{ fontSize: '10px', color: '#94A3B8', fontWeight: '700', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                            {language === 'ta' ? 'நிகர இருப்பு' : 'NET CASH'}
+                          </div>
+                          <div style={{ fontSize: '18px', fontWeight: '800', color: isPositive ? '#059669' : '#DC2626', marginTop: '2px' }}>
+                            {formatCurrency(item.nowOverallHandCash)}
+                          </div>
+                        </div>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '14px', backgroundColor: isExpanded ? '#0F172A' : '#F1F5F9', color: isExpanded ? 'white' : '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>
+                          {isExpanded ? '⌃' : '⌄'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div style={{ backgroundColor: '#F8FAFC', padding: '20px 22px', borderTop: '1px solid #E2E8F0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', color: '#475569', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                            {language === 'ta' ? `${item.label} • ரொக்க அறிக்கை` : `${item.label.toUpperCase()} • FINANCIAL STATEMENT`}
+                          </span>
+                          <span style={{ fontSize: '12px', color: '#94A3B8' }}>{item.dateRange}</span>
+                        </div>
+
+                        {/* Statement Layout Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                          {/* Module 1: Inflows & Opening */}
+                          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingBottom: '8px', borderBottom: '1px solid #F1F5F9' }}>
+                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#059669' }} />
+                              <span style={{ fontSize: '11px', fontWeight: '700', color: '#0F172A', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                                {language === 'ta' ? 'வரவு மற்றும் தொடக்க இருப்பு' : 'CASH INFLOWS & OPENING'}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1E293B' }}>
+                                  {language === 'ta' ? 'முந்தைய தொடக்க கையிருப்பு' : 'Opening Cash in Hand'}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#94A3B8' }}>
+                                  {language === 'ta' ? 'முந்தைய வாரத்திலிருந்து வந்தது' : 'Brought forward from previous week'}
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '14px', fontWeight: '700', color: '#0F172A' }}>
+                                {formatCurrency(item.previousHandCash)}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1E293B' }}>
+                                  {language === 'ta' ? 'அந்த வார வசூல்' : 'Weekly Collections Received'}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#94A3B8' }}>
+                                  {language === 'ta' ? 'வாடிக்கையாளர் தவணை வசூல்' : 'Borrower repayments collected'}
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '14px', fontWeight: '700', color: '#059669' }}>
+                                + ₹{Number(item.collectedCash || 0).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+
+                            {item.investments > 0 && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1E293B' }}>
+                                    {language === 'ta' ? 'முதலீடு / கூடுதல் பணம்' : 'Capital Added / Investment'}
+                                  </div>
+                                  <div style={{ fontSize: '11px', color: '#94A3B8' }}>
+                                    {language === 'ta' ? 'தொழிலில் சேர்க்கப்பட்ட தொகை' : 'Direct capital injection'}
+                                  </div>
+                                </div>
+                                <span style={{ fontSize: '14px', fontWeight: '700', color: '#2563EB' }}>
+                                  + ₹{Number(item.investments || 0).toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                            )}
+
+                            <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC', padding: '8px 10px', borderRadius: '8px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>
+                                {language === 'ta' ? 'மொத்த கிடைக்கும் ரொக்கம்' : 'Gross Available Cash'}
+                              </span>
+                              <span style={{ fontSize: '15px', fontWeight: '800', color: '#0F172A' }}>
+                                {formatCurrency(item.total)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Module 2: Outflows & Deductions */}
+                          <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingBottom: '8px', borderBottom: '1px solid #F1F5F9' }}>
+                              <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#E11D48' }} />
+                              <span style={{ fontSize: '11px', fontWeight: '700', color: '#0F172A', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                                {language === 'ta' ? 'செலவு மற்றும் கடன் வழங்கல்' : 'CASH OUTFLOWS & DISBURSEMENTS'}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1E293B' }}>
+                                  {language === 'ta' ? 'புதிய கடன் வழங்கல்' : 'New Loans Disbursed'}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#94A3B8' }}>
+                                  {language === 'ta' ? 'வாடிக்கையாளருக்கு வழங்கிய தொகை' : 'Principal disbursed to clients'}
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '14px', fontWeight: '700', color: '#D97706' }}>
+                                - ₹{Number(item.loansGiven || 0).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1E293B' }}>
+                                  {language === 'ta' ? 'சம்பளம் மற்றும் அலுவலக செலவுகள்' : 'Expenses & Salaries'}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#94A3B8' }}>
+                                  {language === 'ta' ? 'ஊழியர் ஊதியம் மற்றும் பிற செலவு' : 'Staff payroll, petrol & operations'}
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '14px', fontWeight: '700', color: '#DC2626' }}>
+                                - ₹{Number(item.expenses || 0).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+
+                            <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid #FECDD3', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFF1F2', padding: '8px 10px', borderRadius: '8px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: '700', color: '#9F1239' }}>
+                                {language === 'ta' ? 'மொத்த வாரச் செலவுகள்' : 'Total Weekly Deductions'}
+                              </span>
+                              <span style={{ fontSize: '15px', fontWeight: '800', color: '#BE123C' }}>
+                                - ₹{totalOutflows.toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Module 3: Closing Position Hero Banner */}
+                        <div style={{ marginTop: '14px', background: '#0F172A', borderRadius: '12px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white', flexWrap: 'wrap', gap: '12px' }}>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: '700', color: '#94A3B8', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+                                {language === 'ta' ? 'நிகர இறுதி கையிருப்பு' : 'CLOSING CASH IN HAND'}
+                              </span>
+                              <span style={{ backgroundColor: isPositive ? 'rgba(52, 211, 153, 0.15)' : 'rgba(248, 113, 113, 0.15)', color: isPositive ? '#34D399' : '#F87171', padding: '2px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: '700' }}>
+                                {isPositive ? (language === 'ta' ? 'கையிருப்பு' : 'SURPLUS') : (language === 'ta' ? 'பற்றாக்குறை' : 'DEFICIT')}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '12px', color: '#64748B' }}>
+                              {language === 'ta' ? 'அடுத்த வாரத்திற்கான தொடக்க இருப்பாக செல்லும்' : 'Carried forward as next week opening balance'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '24px', fontWeight: '800', color: isPositive ? '#34D399' : '#F87171', letterSpacing: '-0.3px' }}>
+                            {formatCurrency(item.nowOverallHandCash)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
       );
     }
@@ -509,7 +841,9 @@ const StatDetails = () => {
         <span>←</span> Back
       </button>
       <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '16px', textTransform: 'capitalize' }}>
-        {type?.replace(/-/g, ' ')} Details
+        {type === 'weekly-cashflow'
+          ? (language === 'ta' ? 'வாராந்திர ரொக்க இருப்பு' : 'Weekly Hand Cash')
+          : `${type?.replace(/-/g, ' ')} Details`}
       </h1>
       {renderContent()}
     </div>
