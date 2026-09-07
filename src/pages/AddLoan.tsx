@@ -105,19 +105,43 @@ const AddLoan = () => {
         
         <div className="input-group">
           <label className="input-label">Loan Amount (₹) *</label>
-          <select name="loanAmount" value={form.loanAmount} onChange={handleChange} className="input-field" required>
-            <option value="" disabled>Select Loan Amount</option>
-            <option value="5000">₹5,000</option>
-            <option value="10000">₹10,000</option>
-            <option value="15000">₹15,000</option>
-            <option value="20000">₹20,000</option>
-            <option value="25000">₹25,000</option>
-            <option value="30000">₹30,000</option>
-            <option value="35000">₹35,000</option>
-            <option value="40000">₹40,000</option>
-            <option value="45000">₹45,000</option>
-            <option value="50000">₹50,000</option>
-          </select>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input
+              name="loanAmount"
+              type="number"
+              value={form.loanAmount}
+              onChange={handleChange}
+              placeholder="Enter loan amount"
+              className="input-field"
+              style={{ flex: 1 }}
+              required
+              min="1"
+            />
+            <select
+              value={['5000', '10000', '15000', '20000', '25000', '30000', '35000', '40000', '45000', '50000'].includes(form.loanAmount) ? form.loanAmount : ''}
+              onChange={(e) => {
+                if (e.target.value) {
+                  handleChange({
+                    target: { name: 'loanAmount', value: e.target.value }
+                  } as any);
+                }
+              }}
+              className="input-field"
+              style={{ width: '160px' }}
+            >
+              <option value="">Presets...</option>
+              <option value="5000">₹5,000</option>
+              <option value="10000">₹10,000</option>
+              <option value="15000">₹15,000</option>
+              <option value="20000">₹20,000</option>
+              <option value="25000">₹25,000</option>
+              <option value="30000">₹30,000</option>
+              <option value="35000">₹35,000</option>
+              <option value="40000">₹40,000</option>
+              <option value="45000">₹45,000</option>
+              <option value="50000">₹50,000</option>
+            </select>
+          </div>
         </div>
 
         {/* Removed interest rate as it's no longer used for this fixed plan */}
