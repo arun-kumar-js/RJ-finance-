@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import API from '../services/api';
 import { useTranslation } from '../hooks/useTranslation';
+import CollectionSheetModal from '../components/CollectionSheetModal';
 
 const StatDetails = () => {
   const { type } = useParams();
@@ -14,9 +15,12 @@ const StatDetails = () => {
   const [filterMode, setFilterMode] = useState<'completed' | 'all' | 'active'>('completed');
   const [loading, setLoading] = useState(true);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
+  const [selectedOverdueWeek, setSelectedOverdueWeek] = useState<string | null>(null);
+  const [printModalLine, setPrintModalLine] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     setSelectedLineId(null);
+    setSelectedOverdueWeek(null);
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -85,13 +89,41 @@ const StatDetails = () => {
         return <div style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>No active loans found per line.</div>;
       }
       return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
           {data.map((item, idx) => (
             <div key={idx} className="glass-panel" style={{ padding: '20px', background: 'white', borderLeft: '4px solid #10B981', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <span style={{ fontSize: '32px', marginBottom: '8px' }}>📍</span>
               <h3 style={{ color: '#1E293B', fontSize: '18px', fontWeight: 'bold', margin: '0 0 8px 0', textAlign: 'center' }}>{item.lineName}</h3>
               <p style={{ color: '#10B981', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>{item.activeLoanCount}</p>
-              <span style={{ color: '#6B7280', fontSize: '12px' }}>Active Loans</span>
+              <span style={{ color: '#6B7280', fontSize: '12px', marginBottom: '12px' }}>Active Loans</span>
+              
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPrintModalLine({ id: item.lineId, name: item.lineName });
+                }}
+                style={{
+                  width: '100%',
+                  backgroundColor: '#EEF2FF',
+                  color: '#4F46E5',
+                  border: '1px solid #C7D2FE',
+                  borderRadius: '10px',
+                  padding: '8px 12px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#E0E7FF')}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#EEF2FF')}
+              >
+                <span>🖨️</span> Print Sheet
+              </button>
             </div>
           ))}
         </div>
@@ -594,35 +626,152 @@ const StatDetails = () => {
         return <div style={{ padding: '40px', textAlign: 'center', color: '#6B7280' }}>No overdue EMIs found.</div>;
       }
 
+      // Collect all overdue items based on line selection
+      let lineFilteredItems: any[] = [];
       if (selectedLineId) {
-        const selectedLine = data.find(item => item.lineId === selectedLineId);
-        if (!selectedLine || selectedLine.overdueDetails.length === 0) {
+        const line = data.find(item => item.lineId === selectedLineId);
+        lineFilteredItems = line?.overdueDetails || [];
+      } else {
+        lineFilteredItems = data.flatMap(item => item.overdueDetails || []);
+      }
+
+      const totalOverdueCount = lineFilteredItems.length;
+      const totalOverduePendingAmount = lineFilteredItems.reduce((sum, item) => sum + (item.pendingAmount || 0), 0);
+
+      // Group into weeks
+      const weekGroupsMap: Record<string, {
+        key: string;
+        weekNumber: number;
+        year: number;
+        ordinalLabel: string;
+        dateRange: string;
+        isThisWeek: boolean;
+        totalPendingAmount: number;
+        emis: any[];
+      }> = {};
+
+      lineFilteredItems.forEach(emi => {
+        const d = new Date(emi.dueDate);
+        const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        const dayNr = target.getUTCDay() || 7;
+        target.setUTCDate(target.getUTCDate() + 4 - dayNr);
+        const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((target.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+        const yr = target.getUTCFullYear();
+
+        // Calculate Monday and Sunday for this ISO week
+        const jan4 = new Date(Date.UTC(yr, 0, 4));
+        const day = jan4.getUTCDay() || 7;
+        const mondayWeek1 = new Date(jan4.getTime() - (day - 1) * 86400000);
+        const monday = new Date(mondayWeek1.getTime() + (weekNo - 1) * 7 * 86400000);
+        const sunday = new Date(monday.getTime() + 6 * 86400000);
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const startStr = `${String(monday.getUTCDate()).padStart(2, '0')} ${months[monday.getUTCMonth()]}`;
+        const endStr = `${String(sunday.getUTCDate()).padStart(2, '0')} ${months[sunday.getUTCMonth()]} ${sunday.getUTCFullYear()}`;
+        const dateRange = `${startStr} - ${endStr}`;
+
+        // Current week calculation
+        const now = new Date();
+        const nowTarget = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+        const nowDayNr = nowTarget.getUTCDay() || 7;
+        nowTarget.setUTCDate(nowTarget.getUTCDate() + 4 - nowDayNr);
+        const nowYearStart = new Date(Date.UTC(nowTarget.getUTCFullYear(), 0, 1));
+        const curWeekNo = Math.ceil((((nowTarget.getTime() - nowYearStart.getTime()) / 86400000) + 1) / 7);
+        const curYear = nowTarget.getUTCFullYear();
+        const isThisWeek = (yr === curYear && weekNo === curWeekNo);
+
+        const getOrdinalSuffix = (n: number) => {
+          const s = ['th', 'st', 'nd', 'rd'];
+          const v = n % 100;
+          return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        };
+
+        const key = `${yr}-W${String(weekNo).padStart(2, '0')}`;
+        if (!weekGroupsMap[key]) {
+          weekGroupsMap[key] = {
+            key,
+            weekNumber: weekNo,
+            year: yr,
+            ordinalLabel: `${getOrdinalSuffix(weekNo)} Week`,
+            dateRange,
+            isThisWeek,
+            totalPendingAmount: 0,
+            emis: []
+          };
+        }
+
+        weekGroupsMap[key].totalPendingAmount += (emi.pendingAmount || 0);
+        weekGroupsMap[key].emis.push(emi);
+      });
+
+      // Sort weeks descending (most recent/current week first)
+      const weekGroups = Object.values(weekGroupsMap).sort((a, b) => {
+        if (a.year !== b.year) return b.year - a.year;
+        return b.weekNumber - a.weekNumber;
+      });
+
+      // If a specific week card is clicked, show ONLY that week's overdue EMI records
+      if (selectedOverdueWeek) {
+        const activeGroup = weekGroups.find(w => w.key === selectedOverdueWeek);
+        if (!activeGroup || activeGroup.emis.length === 0) {
           return (
             <div style={{ padding: '24px', background: 'white', borderRadius: '12px' }}>
-              <button onClick={() => setSelectedLineId(null)} style={{ marginBottom: '16px', background: '#F3F4F6', border: 'none', color: '#4B5563', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
-                ← Back to Lines
+              <button 
+                onClick={() => setSelectedOverdueWeek(null)} 
+                style={{ marginBottom: '16px', background: '#F3F4F6', border: 'none', color: '#4B5563', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+              >
+                ← Back to Weekly Breakdown
               </button>
-              <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px' }}>No overdue EMI details found for this line.</div>
+              <div style={{ textAlign: 'center', color: '#6B7280', padding: '20px' }}>No overdue EMIs found for this week.</div>
             </div>
           );
         }
 
         return (
-          <div className="glass-panel animate-fade-in" style={{ background: 'white', borderRadius: '12px', padding: '20px' }}>
+          <div className="glass-panel animate-fade-in" style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1E293B', margin: 0 }}>
-                📍 {selectedLine.lineName} - Overdue Details
-              </h2>
-              <button onClick={() => setSelectedLineId(null)} style={{ background: '#F3F4F6', border: 'none', color: '#4B5563', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
-                ← Back to Lines
+              <button 
+                onClick={() => setSelectedOverdueWeek(null)} 
+                style={{ background: '#F1F5F9', border: '1px solid #CBD5E1', color: '#334155', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                ← Back to Weeks
               </button>
+              <div style={{ textAlign: 'right' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1E293B', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
+                  🗓️ {activeGroup.ordinalLabel}
+                  {activeGroup.isThisWeek && (
+                    <span style={{ backgroundColor: '#FEE2E2', color: '#DC2626', fontSize: '12px', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                      🔴 This Week
+                    </span>
+                  )}
+                </h2>
+                <span style={{ fontSize: '13px', color: '#64748B' }}>{activeGroup.dateRange}</span>
+              </div>
+            </div>
+
+            {/* Week Summary Banner */}
+            <div style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <span style={{ fontSize: '12px', color: '#991B1B', fontWeight: 'bold', textTransform: 'uppercase' }}>Overdue Installments</span>
+                <div style={{ fontSize: '22px', fontWeight: '800', color: '#DC2626', marginTop: '2px' }}>
+                  {activeGroup.emis.length} EMIs
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '12px', color: '#991B1B', fontWeight: 'bold', textTransform: 'uppercase' }}>Total Pending</span>
+                <div style={{ fontSize: '22px', fontWeight: '800', color: '#DC2626', marginTop: '2px' }}>
+                  ₹{activeGroup.totalPendingAmount.toLocaleString()}
+                </div>
+              </div>
             </div>
             
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '650px' }}>
                 <thead>
-                  <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', textAlign: 'left' }}>
+                  <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '2px solid #E2E8F0', textAlign: 'left' }}>
                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 'bold', fontSize: '14px' }}>Customer</th>
+                    <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 'bold', fontSize: '14px' }}>Line</th>
                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 'bold', fontSize: '14px' }}>Bond No.</th>
                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 'bold', fontSize: '14px', textAlign: 'center' }}>Installment</th>
                     <th style={{ padding: '12px 16px', color: '#475569', fontWeight: 'bold', fontSize: '14px' }}>Due Date</th>
@@ -631,8 +780,8 @@ const StatDetails = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedLine.overdueDetails.map((emi: any, idx: number) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  {activeGroup.emis.map((emi: any, idx: number) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.15s' }}>
                       <td style={{ padding: '12px 16px' }}>
                         <div 
                           onClick={() => emi.loanId && navigate(`/loans/${emi.loanId}`)}
@@ -640,7 +789,14 @@ const StatDetails = () => {
                         >
                           {emi.customerName}
                         </div>
-                        {emi.phone && <div style={{ fontSize: '12px', color: '#6B7280' }}>{emi.phone}</div>}
+                        {emi.phone && <div style={{ fontSize: '12px', color: '#6B7280' }}>📞 {emi.phone}</div>}
+                      </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        {emi.lineName ? (
+                          <span style={{ backgroundColor: '#EFF6FF', color: '#2563EB', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '600' }}>
+                            📍 {emi.lineName}
+                          </span>
+                        ) : '—'}
                       </td>
                       <td 
                         onClick={() => emi.loanId && navigate(`/loans/${emi.loanId}`)}
@@ -648,18 +804,18 @@ const StatDetails = () => {
                       >
                         {emi.bondNumber || 'N/A'}
                       </td>
-                      <td style={{ padding: '12px 16px', color: '#4B5563', textAlign: 'center' }}>
+                      <td style={{ padding: '12px 16px', color: '#4B5563', textAlign: 'center', fontWeight: '600' }}>
                         #{emi.installmentNumber}
                       </td>
                       <td style={{ padding: '12px 16px', color: '#EF4444', fontWeight: '500' }}>
                         {new Date(emi.dueDate).toLocaleDateString()}
                       </td>
-                      <td style={{ padding: '12px 16px', color: '#EF4444', fontWeight: 'bold', textAlign: 'right' }}>
+                      <td style={{ padding: '12px 16px', color: '#EF4444', fontWeight: 'bold', textAlign: 'right', fontSize: '15px' }}>
                         ₹{emi.pendingAmount?.toLocaleString() || 0}
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                         {emi.phone ? (
-                          <a href={`tel:${emi.phone}`} style={{ textDecoration: 'none', background: '#EF4444', color: 'white', padding: '6px 12px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <a href={`tel:${emi.phone}`} style={{ textDecoration: 'none', background: '#EF4444', color: 'white', padding: '6px 14px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             📞 Call
                           </a>
                         ) : (
@@ -675,33 +831,157 @@ const StatDetails = () => {
         );
       }
 
+      // Default View: Weekly Breakdown Cards with Line Filter Chips
       return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-          {data.map((item, idx) => (
-            <div 
-              key={idx} 
-              onClick={() => item.overdueEmiCount > 0 && setSelectedLineId(item.lineId)} 
-              className="glass-panel" 
-              style={{ 
-                padding: '20px', 
-                background: 'white', 
-                borderLeft: '4px solid #EF4444', 
-                display: 'flex', 
-                flexDirection: 'column', 
+        <div>
+          {/* Top Line Filter Bar */}
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => { setSelectedLineId(null); setSelectedOverdueWeek(null); }}
+              style={{
+                backgroundColor: selectedLineId === null ? '#1E3A5F' : '#FFF',
+                color: selectedLineId === null ? '#FFF' : '#475569',
+                border: selectedLineId === null ? '1px solid #1E3A5F' : '1px solid #CBD5E1',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
                 alignItems: 'center',
-                cursor: item.overdueEmiCount > 0 ? 'pointer' : 'default',
-                transition: 'transform 0.2s, box-shadow 0.2s',
+                gap: '8px'
               }}
             >
-              <span style={{ fontSize: '32px', marginBottom: '8px' }}>📍</span>
-              <h3 style={{ color: '#1E293B', fontSize: '18px', fontWeight: 'bold', margin: '0 0 8px 0', textAlign: 'center' }}>{item.lineName}</h3>
-              <p style={{ color: '#EF4444', fontSize: '24px', fontWeight: 'bold', margin: 0 }}>{item.overdueEmiCount}</p>
-              <span style={{ color: '#6B7280', fontSize: '12px', marginBottom: '8px' }}>Overdue EMIs</span>
-              {item.overdueEmiCount > 0 && (
-                <span style={{ color: '#3B82F6', fontSize: '12px', fontWeight: 'bold' }}>Click to view details →</span>
-              )}
+              <span>🌐 All Lines</span>
+              <span style={{ backgroundColor: selectedLineId === null ? '#EF4444' : '#E2E8F0', color: selectedLineId === null ? '#FFF' : '#475569', padding: '1px 6px', borderRadius: '10px', fontSize: '11px' }}>
+                {data.reduce((s, l) => s + (l.overdueEmiCount || 0), 0)}
+              </span>
+            </button>
+
+            {data.map((line, idx) => (
+              <button
+                key={idx}
+                onClick={() => { setSelectedLineId(line.lineId === selectedLineId ? null : line.lineId); setSelectedOverdueWeek(null); }}
+                style={{
+                  backgroundColor: selectedLineId === line.lineId ? '#1E3A5F' : '#FFF',
+                  color: selectedLineId === line.lineId ? '#FFF' : '#475569',
+                  border: selectedLineId === line.lineId ? '1px solid #1E3A5F' : '1px solid #CBD5E1',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <span>📍 {line.lineName}</span>
+                <span style={{ backgroundColor: selectedLineId === line.lineId ? '#EF4444' : '#E2E8F0', color: selectedLineId === line.lineId ? '#FFF' : '#475569', padding: '1px 6px', borderRadius: '10px', fontSize: '11px' }}>
+                  {line.overdueEmiCount || 0}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Overall Stats Card */}
+          <div style={{ background: 'white', borderRadius: '16px', padding: '20px', marginBottom: '20px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div>
+              <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                {selectedLineId ? data.find(l => l.lineId === selectedLineId)?.lineName : 'Total Overdue'}
+              </span>
+              <div style={{ fontSize: '24px', fontWeight: '800', color: '#EF4444', marginTop: '2px' }}>
+                {totalOverdueCount} Overdue EMIs
+              </div>
             </div>
-          ))}
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 'bold', textTransform: 'uppercase' }}>Total Pending Amount</span>
+              <div style={{ fontSize: '22px', fontWeight: '800', color: '#1E293B', marginTop: '2px' }}>
+                ₹{totalOverduePendingAmount.toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          {/* Weekly Breakdown Grid Cards */}
+          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#334155', marginBottom: '16px' }}>
+            📅 Weekly Overdue Breakdown ({weekGroups.length} Weeks)
+          </h3>
+
+          {weekGroups.length === 0 ? (
+            <div style={{ background: 'white', padding: '32px', borderRadius: '12px', textAlign: 'center', color: '#6B7280' }}>
+              No overdue EMIs for this selection.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              {weekGroups.map((group, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setSelectedOverdueWeek(group.key)}
+                  className="glass-panel animate-fade-in"
+                  style={{
+                    padding: '20px',
+                    background: 'white',
+                    borderRadius: '14px',
+                    borderLeft: `5px solid ${group.isThisWeek ? '#EF4444' : '#F59E0B'}`,
+                    border: group.isThisWeek ? '1px solid #FECACA' : '1px solid #E2E8F0',
+                    borderLeftWidth: '5px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)';
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <h4 style={{ color: '#1E293B', fontSize: '16px', fontWeight: '800', margin: 0 }}>
+                            🗓️ {group.ordinalLabel}
+                          </h4>
+                          {group.isThisWeek && (
+                            <span style={{ backgroundColor: '#FEF2F2', color: '#EF4444', border: '1px solid #EF4444', fontSize: '10px', padding: '1px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
+                              🔴 This Week
+                            </span>
+                          )}
+                        </div>
+                        <span style={{ color: '#64748B', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                          {group.dateRange}
+                        </span>
+                      </div>
+
+                      <div style={{ backgroundColor: group.isThisWeek ? '#FEE2E2' : '#FEF3C7', padding: '6px 12px', borderRadius: '10px', textAlign: 'center' }}>
+                        <div style={{ color: group.isThisWeek ? '#DC2626' : '#D97706', fontSize: '18px', fontWeight: '800', lineHeight: 1 }}>
+                          {group.emis.length}
+                        </div>
+                        <div style={{ color: group.isThisWeek ? '#DC2626' : '#D97706', fontSize: '10px', fontWeight: 'bold', marginTop: '2px' }}>
+                          EMIs
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '13px', color: '#64748B' }}>
+                        Pending: <strong style={{ color: '#EF4444' }}>₹{group.totalPendingAmount.toLocaleString()}</strong>
+                      </span>
+                      <span style={{ color: '#3B82F6', fontSize: '12px', fontWeight: 'bold' }}>
+                        View Details →
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       );
     }
