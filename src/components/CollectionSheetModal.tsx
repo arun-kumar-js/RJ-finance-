@@ -125,7 +125,7 @@ export const CollectionSheetModal: React.FC<CollectionSheetModalProps> = ({
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
               onClick={() => window.print()}
               disabled={loading || !data}
@@ -133,18 +133,38 @@ export const CollectionSheetModal: React.FC<CollectionSheetModalProps> = ({
                 backgroundColor: '#10B981',
                 color: 'white',
                 border: 'none',
-                padding: '8px 18px',
+                padding: '8px 14px',
                 borderRadius: '8px',
                 fontWeight: 'bold',
-                fontSize: '14px',
+                fontSize: '13px',
                 cursor: loading || !data ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '6px',
                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
               }}
             >
-              <span>🖨️</span> Print / Save PDF
+              <span>🖨️</span> Print / PDF
+            </button>
+            <button
+              onClick={() => window.print()}
+              disabled={loading || !data}
+              style={{
+                backgroundColor: '#2563EB',
+                color: 'white',
+                border: 'none',
+                padding: '8px 14px',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: loading || !data ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              }}
+            >
+              <span>📥</span> Save PDF
             </button>
             <button
               onClick={onClose}
@@ -284,10 +304,8 @@ export const CollectionSheetModal: React.FC<CollectionSheetModalProps> = ({
                         </td>
                         <td style={{ border: '1px solid #E2E8F0', padding: '5px 4px', textAlign: 'right', fontWeight: '600' }}>₹{r.currentWeekEmi?.toLocaleString()}</td>
                         <td style={{ border: '1px solid #E2E8F0', padding: '5px 4px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#F1F5F9' }}>₹{r.totalDue?.toLocaleString()}</td>
-                        <td style={{ border: '1px solid #E2E8F0', padding: '4px', textAlign: 'center' }}>
-                          <div style={{ border: '1px solid #CBD5E1', borderRadius: '4px', height: '26px', background: '#F8FAFC', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: '10px' }}>
-                            [ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]
-                          </div>
+                        <td style={{ border: '1px solid #E2E8F0', padding: '5px 6px', textAlign: 'center', color: '#64748B', fontSize: '11px' }}>
+                          {r.collectedCash || '-'}
                         </td>
                         <td style={{ border: '1px solid #E2E8F0', padding: '5px 6px', color: '#64748B', fontSize: '11px' }}>
                           {r.remarks || '-'}
