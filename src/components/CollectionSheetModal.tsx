@@ -254,7 +254,6 @@ export const CollectionSheetModal: React.FC<CollectionSheetModalProps> = ({
                 >
                   <div><strong>Line Name:</strong> {data.lineName}</div>
                   <div><strong>Collection Date / Week:</strong> {data.collectionDate} (Week {data.weekNumber})</div>
-                  <div><strong>Agent / Collector:</strong> {data.collectorName}</div>
                   <div><strong>Total Active Accounts:</strong> {data.summary?.totalAccounts || 0} Accounts</div>
                 </div>
               </div>
@@ -305,10 +304,10 @@ export const CollectionSheetModal: React.FC<CollectionSheetModalProps> = ({
                         <td style={{ border: '1px solid #E2E8F0', padding: '5px 4px', textAlign: 'right', fontWeight: '600' }}>₹{r.currentWeekEmi?.toLocaleString()}</td>
                         <td style={{ border: '1px solid #E2E8F0', padding: '5px 4px', textAlign: 'right', fontWeight: 'bold', backgroundColor: '#F1F5F9' }}>₹{r.totalDue?.toLocaleString()}</td>
                         <td style={{ border: '1px solid #E2E8F0', padding: '5px 6px', textAlign: 'center', color: '#64748B', fontSize: '11px' }}>
-                          {r.collectedCash || '-'}
+                          {r.collectedCash || ''}
                         </td>
                         <td style={{ border: '1px solid #E2E8F0', padding: '5px 6px', color: '#64748B', fontSize: '11px' }}>
-                          {r.remarks || '-'}
+                          {r.remarks || ''}
                         </td>
                       </tr>
                     ))
@@ -341,33 +340,28 @@ export const CollectionSheetModal: React.FC<CollectionSheetModalProps> = ({
                     <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', fontWeight: 'bold', color: '#DC2626' }}>
                       ₹{data.summary?.totalPastBending?.toLocaleString()}
                     </td>
-                    <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', color: '#64748B' }}>—</td>
+                    <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', color: '#64748B' }}></td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', fontWeight: 600 }}>Total Current Week EMI Target:</td>
                     <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', fontWeight: 'bold' }}>
                       ₹{data.summary?.totalCurrentWeekTarget?.toLocaleString()}
                     </td>
-                    <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', color: '#64748B' }}>—</td>
+                    <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', color: '#64748B' }}></td>
                   </tr>
                   <tr style={{ backgroundColor: '#F8FAFC' }}>
                     <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', fontWeight: 'bold' }}>Total Target Collection for this Line:</td>
                     <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', fontWeight: 'bold', fontSize: '13px' }}>
                       ₹{data.summary?.totalTargetCollection?.toLocaleString()}
                     </td>
-                    <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontWeight: 'bold' }}>₹</span>
-                        <div style={{ width: '160px', height: '24px', background: '#E2E8F0', border: '1px solid #CBD5E1', borderRadius: '4px' }}></div>
-                      </div>
-                    </td>
+                    <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center' }}></td>
                   </tr>
                   <tr>
                     <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', fontWeight: 600 }}>Total Pending Balance across Line:</td>
                     <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', fontWeight: 'bold' }}>
                       ₹{data.summary?.totalOverallPending?.toLocaleString()}
                     </td>
-                    <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', color: '#64748B' }}>—</td>
+                    <td style={{ border: '1px solid #E2E8F0', padding: '8px 12px', textAlign: 'center', color: '#64748B' }}></td>
                   </tr>
                 </tbody>
               </table>

@@ -13,9 +13,9 @@ const LoanDetails = () => {
   const [loan, setLoan] = useState<any>(null);
   const [schedule, setSchedule] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [collecting, setCollecting] = useState(false);
-  const [challanNumber, setChallanNumber] = useState('');
-  const [collectAmount, setCollectAmount] = useState('');
+  const [collectingId, setCollectingId] = useState<string | null>(null);
+  const [challanNumbers, setChallanNumbers] = useState<Record<string, string>>({});
+  const [collectAmounts, setCollectAmounts] = useState<Record<string, string>>({});
   
   const [closeModalVisible, setCloseModalVisible] = useState(false);
   const [closeAmount, setCloseAmount] = useState('');
@@ -30,10 +30,14 @@ const LoanDetails = () => {
 
   useEffect(() => {
     if (schedule && schedule.length > 0) {
-      const pending = schedule.find(s => s.status !== 'Paid');
-      if (pending) {
-        setCollectAmount((pending.amount - (pending.paidAmount || 0)).toString());
-      }
+      const initialAmounts: Record<string, string> = {};
+      schedule.forEach(s => {
+        if (s.status !== 'Paid') {
+          const remainingAmount = s.amount - (s.paidAmount || 0);
+          initialAmounts[s._id] = remainingAmount > 0 ? remainingAmount.toString() : s.amount.toString();
+        }
+      });
+      setCollectAmounts(initialAmounts);
     }
   }, [schedule]);
 
@@ -52,31 +56,54 @@ const LoanDetails = () => {
     }
   };
 
+  const isEmiDatePassed = (dueDate: string | Date | undefined) => {
+    if (!dueDate) return false;
+    const due = new Date(dueDate);
+    if (isNaN(due.getTime())) return false;
+    const now = new Date();
+    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    return due <= endOfToday;
+  };
+
+  const firstPendingEmi = schedule.find(s => s.status !== 'Paid');
+
+  const isEmiEnterable = (emi: any) => {
+    if (emi.status === 'Paid') return false;
+    if (isEmiDatePassed(emi.dueDate)) return true;
+    if (firstPendingEmi && emi._id === firstPendingEmi._id) return true;
+    return false;
+  };
+
   const handleCollect = async (emi: any) => {
-    if (!collectAmount.trim() || isNaN(Number(collectAmount)) || Number(collectAmount) <= 0) {
+    const amountVal = collectAmounts[emi._id] !== undefined
+      ? collectAmounts[emi._id]
+      : (emi.amount - (emi.paidAmount || 0)).toString();
+    const challanVal = challanNumbers[emi._id] || '';
+
+    if (!amountVal.trim() || isNaN(Number(amountVal)) || Number(amountVal) <= 0) {
       alert("Please enter a valid collect amount!");
       return;
     }
-    if (!window.confirm(`Collect ₹${collectAmount} for Installment ${emi.installmentNumber}?`)) return;
+    if (!window.confirm(`Collect ₹${amountVal} for Installment ${emi.installmentNumber}?`)) return;
 
     try {
-      setCollecting(true);
+      setCollectingId(emi._id);
       await collectEmi({
         customerId: loan.customerId._id || loan.customerId,
         loanId: loan._id,
         emiScheduleId: emi._id,
         receiptBookNumber: 'CHALLAN',
-        receiptNumber: challanNumber.trim(),
-        amount: Number(collectAmount),
+        receiptNumber: challanVal.trim(),
+        amount: Number(amountVal),
         collectionDate: new Date().toISOString()
       });
-      setChallanNumber('');
+      setChallanNumbers(prev => ({ ...prev, [emi._id]: '' }));
       fetchLoan();
     } catch (err: any) {
       console.error(err);
       alert(err?.response?.data?.message || 'Failed to collect EMI');
     } finally {
-      setCollecting(false);
+      setCollectingId(null);
     }
   };
 
@@ -123,19 +150,32 @@ const LoanDetails = () => {
   }
 
   const completedEmis = schedule.filter(s => s.status === 'Paid');
-  const nextPendingEmi = schedule.find(s => s.status !== 'Paid');
-  const displaySchedule = [...completedEmis];
-  if (nextPendingEmi) {
-    displaySchedule.push(nextPendingEmi);
+  const passedPendingEmis = schedule.filter(s => s.status !== 'Paid' && isEmiDatePassed(s.dueDate));
+  const futurePendingEmis = schedule.filter(s => s.status !== 'Paid' && !isEmiDatePassed(s.dueDate));
+
+  const displayMap = new Map<string, any>();
+  completedEmis.forEach(e => displayMap.set(e._id, e));
+  passedPendingEmis.forEach(e => displayMap.set(e._id, e));
+  if (futurePendingEmis.length > 0) {
+    displayMap.set(futurePendingEmis[0]._id, futurePendingEmis[0]);
   }
+
+  const displaySchedule = Array.from(displayMap.values());
   displaySchedule.sort((a, b) => a.installmentNumber - b.installmentNumber);
   const totalPaid = loan.totalPaid || 0;
   const remaining = (loan.emiAmount * loan.totalInstallments) - totalPaid;
 
-  const getBadgeColor = (status: string) => {
-    if (status.toLowerCase() === 'paid') return '#10B981';
-    if (status.toLowerCase() === 'pending') return '#F59E0B';
+  const getBadgeColor = (emi: any) => {
+    if (emi.status?.toLowerCase() === 'paid') return '#10B981';
+    if (isEmiDatePassed(emi.dueDate) || emi.status?.toLowerCase() === 'overdue') return '#EF4444';
+    if (emi.status?.toLowerCase() === 'pending') return '#F59E0B';
     return '#64748B';
+  };
+
+  const getBadgeText = (emi: any) => {
+    if (emi.status?.toLowerCase() === 'paid') return 'PAID';
+    if (isEmiDatePassed(emi.dueDate)) return 'OVERDUE';
+    return emi.status?.toUpperCase() || 'PENDING';
   };
 
   return (
@@ -205,8 +245,8 @@ const LoanDetails = () => {
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <span style={{ color: '#1E293B', fontSize: '15px', fontWeight: 'bold' }}>Installment {emi.installmentNumber}</span>
-                <span style={{ backgroundColor: getBadgeColor(emi.status), color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                  {emi.status}
+                <span style={{ backgroundColor: getBadgeColor(emi), color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                  {getBadgeText(emi)}
                 </span>
               </div>
 
@@ -224,7 +264,7 @@ const LoanDetails = () => {
                 </div>
               )}
 
-              {emi._id === nextPendingEmi?._id && (
+              {isEmiEnterable(emi) && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px', borderTop: '1px solid #F1F5F9', paddingTop: '16px' }}>
                   <div style={{ display: 'flex', gap: '12px' }}>
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -232,8 +272,8 @@ const LoanDetails = () => {
                       <input
                         type="number"
                         placeholder="Amount"
-                        value={collectAmount}
-                        onChange={(e) => setCollectAmount(e.target.value)}
+                        value={collectAmounts[emi._id] !== undefined ? collectAmounts[emi._id] : (emi.amount - (emi.paidAmount || 0)).toString()}
+                        onChange={(e) => setCollectAmounts(prev => ({ ...prev, [emi._id]: e.target.value }))}
                         style={{ padding: '12px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '15px', width: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
@@ -242,8 +282,8 @@ const LoanDetails = () => {
                       <input
                         type="text"
                         placeholder="Challan No"
-                        value={challanNumber}
-                        onChange={(e) => setChallanNumber(e.target.value.toUpperCase())}
+                        value={challanNumbers[emi._id] || ''}
+                        onChange={(e) => setChallanNumbers(prev => ({ ...prev, [emi._id]: e.target.value.toUpperCase() }))}
                         style={{ padding: '12px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '15px', width: '100%', boxSizing: 'border-box' }}
                       />
                     </div>
@@ -251,10 +291,10 @@ const LoanDetails = () => {
                   
                   <button 
                     onClick={() => handleCollect(emi)}
-                    disabled={collecting}
-                    style={{ backgroundColor: '#F59E0B', color: 'white', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: 'bold', cursor: collecting ? 'not-allowed' : 'pointer', opacity: collecting ? 0.7 : 1 }}
+                    disabled={collectingId === emi._id}
+                    style={{ backgroundColor: '#F59E0B', color: 'white', padding: '14px', borderRadius: '12px', border: 'none', fontSize: '15px', fontWeight: 'bold', cursor: collectingId === emi._id ? 'not-allowed' : 'pointer', opacity: collectingId === emi._id ? 0.7 : 1 }}
                   >
-                    {collecting ? 'Collecting...' : 'Collected'}
+                    {collectingId === emi._id ? 'Collecting...' : 'Collected'}
                   </button>
                 </div>
               )}
